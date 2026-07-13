@@ -96,7 +96,7 @@ function formatDate(iso: string) {
   }).format(new Date(iso))
 }
 
-const runColumns: ColumnDef<DemoRun>[] = [
+export const runColumns: ColumnDef<DemoRun>[] = [
   {
     accessorKey: "id",
     header: "Run",

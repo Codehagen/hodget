@@ -38,7 +38,7 @@ export function StatusDonut({ data }: { data: StatusSlice[] }) {
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Runs by status</CardTitle>
-        <CardDescription>{total} runs in the last 48 hours</CardDescription>
+        <CardDescription>{total} runs across recent cycles</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={statusConfig} className="mx-auto h-64 w-full">
