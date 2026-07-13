@@ -251,3 +251,41 @@
     animation: fade-in var(--duration-fast) var(--ease-out-quad) !important;
   }
 }
+
+/*
+ * Honor the OS "Reduce transparency" setting: scrims go frosted-to-solid.
+ * The blur comes off and the scrim darkens enough to separate layers on its
+ * own, since blur was doing part of that separation work.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"],
+  [data-slot="drawer-overlay"] {
+    backdrop-filter: none !important;
+    background-color: rgb(0 0 0 / 0.6) !important;
+  }
+}
+
+/*
+ * Honor the OS "Increase contrast" setting: floating surfaces trade their
+ * soft foreground/10 ring for a fully contrasting one so their edges stay
+ * defined, and scrims darken for clearer layer separation.
+ */
+@media (prefers-contrast: more) {
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="popover-content"],
+  [data-slot="sheet-content"],
+  [data-slot="drawer-popup"] {
+    --tw-ring-color: var(--foreground);
+    border-color: var(--foreground);
+  }
+
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"],
+  [data-slot="drawer-overlay"] {
+    background-color: rgb(0 0 0 / 0.6) !important;
+  }
+}
