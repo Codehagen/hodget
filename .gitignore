@@ -24,8 +24,11 @@ dist
 # turbo
 .turbo
 
-# local agent config
-.claude/
+# local agent config (shared skills are allowlisted below)
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/house-style/
 
 # misc
 .DS_Store
