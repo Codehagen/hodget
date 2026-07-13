@@ -24,6 +24,9 @@ dist
 # turbo
 .turbo
 
+# local agent config
+.claude/
+
 # misc
 .DS_Store
 *.pem
