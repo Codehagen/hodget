@@ -6,6 +6,7 @@
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",
+    "./only-warn": "./only-warn.js",
     "./react-internal": "./react-internal.js"
   },
   "devDependencies": {
