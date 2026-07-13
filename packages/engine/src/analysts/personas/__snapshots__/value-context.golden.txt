@@ -1,0 +1,19 @@
+FUNDAMENTALS SNAPSHOT
+security: US-XNAS-SYNA
+currency: USD
+price: 10.00
+periods: 3 (2018 -> 2020)
+
+PER-PERIOD METRICS
+period | revenue | netIncome | netMargin | ownerEarnings | bookValuePerShare | debtToEquity
+2018 | 1000.00 | 100.00 | 10.00% | 100.00 | 5.0000 | 0.4000
+2019 | 1100.00 | 121.00 | 11.00% | 110.00 | 5.5000 | 0.3818
+2020 | 1210.00 | 145.20 | 12.00% | 121.00 | 6.0500 | 0.3636
+
+DERIVED
+revenueCagr(annualized): 10.00%
+netMarginTrend: improving (slope 1.00pp/period)
+bookValueGrowth(perShare, annualized): 10.00%
+ownerEarnings(latest): 121.00
+intrinsicValuePerShare: 12.10
+marginOfSafety: 17.36%

@@ -2,12 +2,15 @@
   "name": "hodget",
   "version": "0.0.1",
   "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "An open-source AI hedge fund: a panel of AI analysts and quant models that research, form views, and turn them into positions.",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "test": "turbo test"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

@@ -1,0 +1,68 @@
+{
+  "baseCurrency": "USD",
+  "caveats": [
+    "fixed-universe case study: results run on an explicit symbol list and are not survivorship-adjusted",
+    "metrics use raw-price accounting; split/dividend-adjusted series feed analytics only, never the book"
+  ],
+  "equityCurve": {
+    "length": 259,
+    "first": 1000000,
+    "last": 1048226.1053,
+    "sum": 265415806.1317
+  },
+  "metrics": {
+    "totalReturn": 0.04822611,
+    "annualizedReturn": 0.04707858,
+    "sharpe": 1.61457199,
+    "sortino": 2.50168307,
+    "maxDrawdown": 0.0199958,
+    "winRate": 0.55803571,
+    "turnover": 0.7206304,
+    "costDrag": 0.00076182,
+    "tradingDays": 259
+  },
+  "trades": {
+    "count": 442,
+    "byCurrency": {
+      "NOK": 222,
+      "USD": 220
+    },
+    "bySide": {
+      "buy": 218,
+      "sell": 224
+    },
+    "first": {
+      "securityId": "NO-XOSL-OSYN",
+      "side": "buy",
+      "quantity": 7326,
+      "price": 177.723918,
+      "currency": "NOK",
+      "filledAt": "2020-02-13T21:00:00Z",
+      "conviction": 0.7,
+      "abstained": false
+    },
+    "last": {
+      "securityId": "US-XNAS-SYNA",
+      "side": "buy",
+      "quantity": 21,
+      "price": 60.142656,
+      "currency": "USD",
+      "filledAt": "2020-12-31T21:00:00Z",
+      "conviction": 0.7,
+      "abstained": false
+    }
+  },
+  "corporateActions": [
+    {
+      "type": "dividend",
+      "exDate": "2020-05-06",
+      "cashCredited": 42504
+    },
+    {
+      "type": "split",
+      "exDate": "2020-06-15",
+      "before": 1278,
+      "after": 2556
+    }
+  ]
+}
