@@ -49,7 +49,7 @@ export function EquityChart({ data }: { data: EquityPoint[] }) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={equityConfig} className="aspect-auto h-64 w-full">
-          <AreaChart data={data} margin={{ left: 0, right: 8 }}>
+          <AreaChart key={isAnimationActive ? "animated" : "static"} data={data} margin={{ left: 0, right: 8 }}>
             <defs>
               <linearGradient id="fillEquity" x1="0" y1="0" x2="0" y2="1">
                 <stop

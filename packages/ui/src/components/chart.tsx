@@ -42,8 +42,11 @@ function useChart() {
 // Returns whether Recharts mount animations should run. `false` during SSR
 // and on first render (avoids a hydration mismatch), then reflects
 // `prefers-reduced-motion` once mounted. Pass the result to each Recharts
-// series' `isAnimationActive` prop — the reduced-motion CSS layer cannot
-// touch Recharts' rAF-driven geometry tweens.
+// series' `isAnimationActive` prop AND key the chart root on the value
+// (key={isAnimationActive ? "animated" : "static"}): the reduced-motion CSS
+// layer cannot touch Recharts' rAF-driven geometry tweens, and flipping the
+// prop on a mounted chart strands the series in its pre-animation state —
+// the remount replays the mount animation instead.
 function useChartAnimation(): boolean {
   const [animate, setAnimate] = React.useState(false)
 

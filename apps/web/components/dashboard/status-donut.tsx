@@ -42,7 +42,7 @@ export function StatusDonut({ data }: { data: StatusSlice[] }) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={statusConfig} className="mx-auto h-64 w-full">
-          <PieChart margin={{ top: 8, bottom: 8 }}>
+          <PieChart key={isAnimationActive ? "animated" : "static"} margin={{ top: 8, bottom: 8 }}>
             <ChartTooltip
               content={<ChartTooltipContent nameKey="label" hideLabel />}
             />

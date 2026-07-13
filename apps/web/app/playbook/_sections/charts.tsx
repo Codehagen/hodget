@@ -134,7 +134,7 @@ export function ChartsSection() {
               config={activityConfig}
               className="aspect-auto h-56 w-full"
             >
-              <AreaChart data={activityData} margin={{ left: 0, right: 8 }}>
+              <AreaChart key={isAnimationActive ? "animated" : "static"} data={activityData} margin={{ left: 0, right: 8 }}>
                 <defs>
                   <linearGradient id="fillOpened" x1="0" y1="0" x2="0" y2="1">
                     <stop
@@ -213,6 +213,7 @@ export function ChartsSection() {
               className="aspect-auto h-56 w-full"
             >
               <BarChart
+                key={isAnimationActive ? "animated" : "static"}
                 data={holdingsData}
                 layout="vertical"
                 margin={{ left: 8, right: 16 }}
@@ -256,7 +257,7 @@ export function ChartsSection() {
               config={statusConfig}
               className="h-64 w-full"
             >
-              <PieChart margin={{ top: 16, bottom: 8 }}>
+              <PieChart key={isAnimationActive ? "animated" : "static"} margin={{ top: 16, bottom: 8 }}>
                 <ChartTooltip
                   content={<ChartTooltipContent nameKey="label" hideLabel />}
                 />
