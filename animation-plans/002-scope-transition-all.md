@@ -1,6 +1,6 @@
 # 002 — Replace transition-all with scoped transition properties
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: HIGH
 - **Category**: Performance

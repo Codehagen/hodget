@@ -1,6 +1,6 @@
 # 011 — Draw the checkbox checkmark with the existing draw-stroke keyframe (opportunity)
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW (missed opportunity — additive)
 - **Category**: Missed opportunities

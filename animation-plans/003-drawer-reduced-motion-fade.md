@@ -1,6 +1,6 @@
 # 003 — Drawer fades instead of teleporting under reduced motion
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: MEDIUM
 - **Category**: Accessibility

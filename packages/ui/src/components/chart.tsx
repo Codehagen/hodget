@@ -39,6 +39,25 @@ function useChart() {
   return context
 }
 
+// Returns whether Recharts mount animations should run. `false` during SSR
+// and on first render (avoids a hydration mismatch), then reflects
+// `prefers-reduced-motion` once mounted. Pass the result to each Recharts
+// series' `isAnimationActive` prop — the reduced-motion CSS layer cannot
+// touch Recharts' rAF-driven geometry tweens.
+function useChartAnimation(): boolean {
+  const [animate, setAnimate] = React.useState(false)
+
+  React.useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const update = () => setAnimate(!query.matches)
+    update()
+    query.addEventListener("change", update)
+    return () => query.removeEventListener("change", update)
+  }, [])
+
+  return animate
+}
+
 function ChartContainer({
   id,
   className,
@@ -370,4 +389,5 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  useChartAnimation,
 }

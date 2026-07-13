@@ -6,7 +6,7 @@
 .typeset-docs {
   --typeset-font-body: var(--font-geist);
   --typeset-font-heading: var(--font-geist);
-  --typeset-font-mono: var(--font-geist-mono);
+  --typeset-font-mono: var(--font-mono);
   --typeset-size: 15px;
   --typeset-leading: 1.75;
   --typeset-flow: 1.25em;
@@ -18,7 +18,7 @@
 @source "../**/*.{ts,tsx}";
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: var(--font-geist);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -89,6 +89,7 @@
     --animate-slide-right-fade: slide-right-fade var(--duration-page) var(--ease-out-quart);
     --animate-wiggle: wiggle 0.75s var(--ease-in-out-cubic) infinite;
     --animate-blink: blink 1.4s var(--ease-out-cubic) infinite;
+    --animate-draw-stroke: draw-stroke 150ms var(--ease-out-quart);
 }
 
 @keyframes fade-in {
@@ -230,8 +231,10 @@
  * flattened (they mostly encode movement, including third-party components we
  * don't hand-author), but transitions are restricted to non-movement properties
  * instead of zeroed — opacity/color feedback that aids comprehension keeps
- * running, while transform/translate/width/height changes snap. Dialogs re-opt
- * into a plain fade.
+ * running, while transform/translate/width/height changes snap. Dialogs now
+ * transition opacity natively (Base UI transition idiom), so the base rule
+ * below already preserves their fade with no re-opt-in needed. Drawers get
+ * their own reduced-motion handling below.
  */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -244,10 +247,10 @@
     scroll-behavior: auto !important;
   }
 
-  /* Modals should still fade, not teleport. The command palette
-     (data-command-dialog) stays instant. */
-  [data-slot="dialog-content"][data-open]:not([data-command-dialog]),
-  [data-slot="dialog-overlay"][data-open]:not(:has(~ [data-command-dialog])) {
+  /* The drawer's entrance is transform-only, which the rule above strips —
+     re-opt it into a fade so it never teleports. */
+  [data-slot="drawer-popup"][data-open],
+  [data-slot="drawer-overlay"][data-open] {
     animation: fade-in var(--duration-fast) var(--ease-out-quad) !important;
   }
 }

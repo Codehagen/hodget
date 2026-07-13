@@ -1,6 +1,6 @@
 # 009 — Sliding tabs indicator (opportunity)
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW (missed opportunity — additive)
 - **Category**: Missed opportunities

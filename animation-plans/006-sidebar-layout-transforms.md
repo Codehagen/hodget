@@ -1,6 +1,6 @@
 # 006 — Stop animating layout properties in sidebar and filter-pill
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: MEDIUM
 - **Category**: Performance

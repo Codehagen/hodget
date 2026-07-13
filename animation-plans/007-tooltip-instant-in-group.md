@@ -1,6 +1,6 @@
 # 007 — Tooltips appear instantly after the first in a group
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW
 - **Category**: Purpose & frequency

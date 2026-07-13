@@ -1,6 +1,6 @@
 # 004 — Migrate dialogs from keyframe utilities to the Base UI transition idiom
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: MEDIUM
 - **Category**: Cohesion & tokens (with an interruptibility bonus)

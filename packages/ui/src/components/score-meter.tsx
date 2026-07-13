@@ -162,7 +162,10 @@ function ScoreRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className={meta.ringClass}
+          className={cn(
+            meta.ringClass,
+            "transition-[stroke-dashoffset] duration-[var(--duration-slow)] ease-out-quart motion-reduce:transition-none"
+          )}
         />
       </svg>
       {children !== undefined ? (

@@ -1,6 +1,6 @@
 # 010 — Rotate one accordion chevron instead of swapping two icons (opportunity)
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW (missed opportunity — additive)
 - **Category**: Missed opportunities

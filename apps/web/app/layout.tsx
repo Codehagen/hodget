@@ -19,11 +19,6 @@ const geist = Geist({
   variable: "--font-geist",
 })
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-})
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,8 +33,7 @@ export default function RootLayout({
         fontMono.variable,
         "font-sans",
         inter.variable,
-        geist.variable,
-        geistMono.variable
+        geist.variable
       )}
     >
       <body>

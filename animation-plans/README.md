@@ -9,18 +9,18 @@ directory is motion-only.
 
 | # | Title | Severity | Category | Status |
 | --- | --- | --- | --- | --- |
-| [001](001-charts-reduced-motion.md) | Gate Recharts animations on prefers-reduced-motion | HIGH | Accessibility | TODO |
-| [002](002-scope-transition-all.md) | Replace transition-all with scoped properties | HIGH | Performance | TODO |
-| [003](003-drawer-reduced-motion-fade.md) | Drawer fades instead of teleporting under reduced motion | MEDIUM | Accessibility | TODO |
-| [004](004-dialog-transition-idiom.md) | Migrate dialogs to the Base UI transition idiom | MEDIUM | Cohesion | TODO |
-| [005](005-duration-easing-tokens.md) | Route every duration/easing through tokens | MEDIUM | Cohesion | TODO |
-| [006](006-sidebar-layout-transforms.md) | Stop animating layout properties (sidebar, filter-pill) | MEDIUM | Performance | TODO |
-| [007](007-tooltip-instant-in-group.md) | Tooltips instant after the first in a group | LOW | Purpose | TODO |
-| [008](008-drawer-will-change.md) | Scope drawer will-change to active motion | LOW | Performance | TODO |
-| [009](009-tabs-sliding-indicator.md) | Sliding tabs indicator | LOW | Opportunity | TODO |
-| [010](010-accordion-chevron-rotate.md) | Rotating accordion chevron | LOW | Opportunity | TODO |
-| [011](011-checkbox-draw-stroke.md) | Checkbox check drawn via draw-stroke keyframe | LOW | Opportunity | TODO |
-| [012](012-score-ring-sweep.md) | ScoreRing sweeps to its value | LOW | Opportunity | TODO |
+| [001](001-charts-reduced-motion.md) | Gate Recharts animations on prefers-reduced-motion | HIGH | Accessibility | DONE |
+| [002](002-scope-transition-all.md) | Replace transition-all with scoped properties | HIGH | Performance | DONE |
+| [003](003-drawer-reduced-motion-fade.md) | Drawer fades instead of teleporting under reduced motion | MEDIUM | Accessibility | DONE |
+| [004](004-dialog-transition-idiom.md) | Migrate dialogs to the Base UI transition idiom | MEDIUM | Cohesion | DONE |
+| [005](005-duration-easing-tokens.md) | Route every duration/easing through tokens | MEDIUM | Cohesion | DONE |
+| [006](006-sidebar-layout-transforms.md) | Stop animating layout properties (sidebar, filter-pill) | MEDIUM | Performance | DONE |
+| [007](007-tooltip-instant-in-group.md) | Tooltips instant after the first in a group | LOW | Purpose | DONE |
+| [008](008-drawer-will-change.md) | Scope drawer will-change to active motion | LOW | Performance | DONE |
+| [009](009-tabs-sliding-indicator.md) | Sliding tabs indicator | LOW | Opportunity | DONE |
+| [010](010-accordion-chevron-rotate.md) | Rotating accordion chevron | LOW | Opportunity | DONE |
+| [011](011-checkbox-draw-stroke.md) | Checkbox check drawn via draw-stroke keyframe | LOW | Opportunity | DONE |
+| [012](012-score-ring-sweep.md) | ScoreRing sweeps to its value | LOW | Opportunity | DONE |
 
 ## Recommended execution order & dependencies
 

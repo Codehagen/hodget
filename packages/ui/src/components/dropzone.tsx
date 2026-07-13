@@ -117,7 +117,7 @@ function Dropzone({
       }}
       className={cn(
         "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-none border border-dashed border-border bg-transparent p-8 text-center text-sm text-muted-foreground outline-none select-none",
-        "transition-[border-color,background-color] duration-150 ease-out",
+        "transition-[border-color,background-color] duration-[var(--duration-fast)] ease-out-quart",
         "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
         isDragging && "border-ring bg-accent",
         disabled && "cursor-not-allowed opacity-50",

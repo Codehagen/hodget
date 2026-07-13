@@ -333,7 +333,7 @@ export default function PlaybookPage() {
             example is live; hover a code chip to copy the class.
           </p>
           <div className="mt-7 flex flex-wrap gap-2.5">
-            {["Inter / Geist Mono", "Tailwind CSS v4", "OKLCH tokens"].map(
+            {["Geist / Inter / Geist Mono", "Tailwind CSS v4", "OKLCH tokens"].map(
               (t) => (
                 <span
                   key={t}
@@ -417,15 +417,16 @@ export default function PlaybookPage() {
             title="Typography"
             intro={
               <>
-                Two families. <Strong>Inter</Strong> for UI, headings & body
-                (<Code>font-sans</Code> / <Code>font-heading</Code>), and{" "}
-                <Strong>Geist Mono</Strong> for code, tokens and numerals
-                (<Code>font-mono</Code>).
+                Three families. <Strong>Geist</Strong> for display headings
+                (<Code>font-heading</Code>), <Strong>Inter</Strong> for UI & body
+                (<Code>font-sans</Code>), and <Strong>Geist Mono</Strong> for
+                code and numerals (<Code>font-mono</Code>).
               </>
             }
           >
-            <div className="mb-11 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FontCard family="Inter" token="font-sans" fontClass="font-sans" specimen="Ag" weights="400 · 500 · 600 · 700" sample="The quick brown fox" heavy />
+            <div className="mb-11 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FontCard family="Geist" token="font-heading" fontClass="font-heading" specimen="Ag" weights="400 · 500 · 700 · 900" sample="Compounding, on autopilot" heavy />
+              <FontCard family="Inter" token="font-sans" fontClass="font-sans" specimen="Ag" weights="400 · 500 · 600 · 700" sample="The quick brown fox" />
               <FontCard family="Geist Mono" token="font-mono" fontClass="font-mono" specimen="Ag" weights="400 · 500 · 600" sample="run_9f2a10" />
             </div>
 

@@ -16,10 +16,10 @@ const MenuSub = MenuPrimitive.SubmenuRoot
  * what the multi-select Filter menu needs. Enter/exit uses our motion tokens.
  */
 const popupClass = cn(
-  "z-50 min-w-[220px] origin-[var(--transform-origin)] rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
-  "transition-[opacity,transform] duration-150 ease-out-quart",
+  "z-50 min-w-[220px] origin-(--transform-origin) rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
+  "transition-[opacity,transform] duration-[var(--duration-fast)] ease-out-quart",
   "data-[starting-style]:scale-95 data-[starting-style]:opacity-0",
-  "data-[ending-style]:scale-95 data-[ending-style]:opacity-0"
+  "data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:duration-[var(--duration-instant)]"
 )
 
 function MenuContent({

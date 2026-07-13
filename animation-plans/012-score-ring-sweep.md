@@ -1,6 +1,6 @@
 # 012 — ScoreRing sweeps to its value like its sibling bar (opportunity)
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW (missed opportunity — additive)
 - **Category**: Missed opportunities

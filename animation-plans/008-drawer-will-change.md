@@ -1,6 +1,6 @@
 # 008 — Scope the drawer's will-change to active motion
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: LOW
 - **Category**: Performance

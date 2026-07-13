@@ -1,6 +1,6 @@
 # 005 — Route every duration and easing through the token scale
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: MEDIUM
 - **Category**: Cohesion & tokens

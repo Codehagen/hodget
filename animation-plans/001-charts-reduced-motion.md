@@ -1,6 +1,6 @@
 # 001 — Gate Recharts animations on prefers-reduced-motion
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: ba46291
 - **Severity**: HIGH
 - **Category**: Accessibility

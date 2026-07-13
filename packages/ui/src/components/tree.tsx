@@ -260,7 +260,7 @@ function Tree({
 /* --------------------------------- Raddeler ------------------------------ */
 
 const treeRowClasses =
-  "group/tree-row flex h-8 w-full min-w-0 select-none items-center gap-1.5 rounded-none border border-transparent px-2 text-sm text-foreground outline-none transition-colors duration-100 hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 aria-selected:bg-accent aria-selected:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+  "group/tree-row flex h-8 w-full min-w-0 select-none items-center gap-1.5 rounded-none border border-transparent px-2 text-sm text-foreground outline-none transition-colors duration-[var(--duration-instant)] hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 aria-selected:bg-accent aria-selected:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
 
 function TreeRowIcon({ children }: { children: React.ReactNode }) {
   return (

@@ -26,7 +26,9 @@ function FilterPill({
         className
       )}
     >
-      <span className="flex w-0 scale-75 opacity-0 items-center overflow-hidden transition-[width,transform,opacity] duration-200 ease-out-quart pointer-coarse:w-3.5 pointer-coarse:scale-100 pointer-coarse:opacity-100 pointer-fine:group-hover/pill:w-3.5 pointer-fine:group-hover/pill:scale-100 pointer-fine:group-hover/pill:opacity-100">
+      {/* The remove icon reserves its 14px so the reveal is transform-only —
+          animating width from zero would relayout the label on every hover. */}
+      <span className="flex w-3.5 origin-left scale-x-0 items-center justify-center overflow-hidden opacity-0 transition-[transform,opacity] duration-[var(--duration-base)] ease-out-quart pointer-coarse:scale-x-100 pointer-coarse:opacity-100 pointer-fine:group-hover/pill:scale-x-100 pointer-fine:group-hover/pill:opacity-100">
         <svg viewBox="0 0 16 16" fill="none" className="size-3" aria-hidden>
           <path
             d="M4 4l8 8M12 4l-8 8"

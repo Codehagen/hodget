@@ -13,7 +13,7 @@ function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "peer flex size-4 shrink-0 items-center justify-center rounded-none border border-input bg-transparent text-primary-foreground outline-none transition-shadow focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 data-[checked]:border-primary data-[checked]:bg-primary data-[indeterminate]:border-primary data-[indeterminate]:bg-primary disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive/20",
+        "peer flex size-4 shrink-0 items-center justify-center rounded-none border border-input bg-transparent text-primary-foreground outline-none transition-[box-shadow,background-color,border-color] duration-[var(--duration-fast)] ease-out-quart focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 data-[checked]:border-primary data-[checked]:bg-primary data-[indeterminate]:border-primary data-[indeterminate]:bg-primary disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive/20",
         className
       )}
       {...props}
@@ -22,6 +22,9 @@ function Checkbox({
         <svg viewBox="0 0 14 14" fill="none" className="size-3" aria-hidden>
           <path
             d="M11.5 4L5.75 10L2.5 7"
+            pathLength="1"
+            strokeDasharray="1"
+            className="motion-safe:animate-draw-stroke"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"

@@ -20,6 +20,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
+  useChartAnimation,
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 import {
@@ -102,6 +103,8 @@ const statusConfig = {
 } satisfies ChartConfig
 
 export function ChartsSection() {
+  const isAnimationActive = useChartAnimation()
+
   return (
     <Section
       id="charts"
@@ -180,6 +183,7 @@ export function ChartsSection() {
                   stroke="var(--color-opened)"
                   fill="url(#fillOpened)"
                   strokeWidth={1.5}
+                  isAnimationActive={isAnimationActive}
                 />
                 <Area
                   dataKey="closed"
@@ -187,6 +191,7 @@ export function ChartsSection() {
                   stroke="var(--color-closed)"
                   fill="url(#fillClosed)"
                   strokeWidth={1.5}
+                  isAnimationActive={isAnimationActive}
                 />
                 <ChartLegend content={<ChartLegendContent />} />
               </AreaChart>
@@ -231,6 +236,7 @@ export function ChartsSection() {
                   fill="var(--color-weight)"
                   radius={2}
                   barSize={14}
+                  isAnimationActive={isAnimationActive}
                 />
               </BarChart>
             </ChartContainer>
@@ -265,6 +271,7 @@ export function ChartsSection() {
                     `${name} ${Math.round((percent ?? 0) * 100)}%`
                   }
                   labelLine={false}
+                  isAnimationActive={isAnimationActive}
                 >
                   {statusData.map((entry) => (
                     <Cell key={entry.status} fill={entry.fill} />
