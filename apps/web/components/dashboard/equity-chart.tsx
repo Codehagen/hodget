@@ -77,7 +77,7 @@ export function EquityChart({ data }: { data: EquityPoint[] }) {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              width={48}
+              width={56}
               domain={["dataMin - 200000", "dataMax + 200000"]}
               tickFormatter={(value: number) => usdCompact.format(value)}
             />
