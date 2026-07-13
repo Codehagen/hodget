@@ -33,9 +33,10 @@ import { requireSession } from "@/lib/session"
 export { requireSession }
 
 /**
- * Placeholder proving the boundary wiring is live: it validates the session and
- * constructs the (only-permitted-here) Supabase server client. Replace with real
- * queries once the schema exists.
+ * Placeholder proving the Supabase boundary wiring is live: it validates the
+ * session and constructs the (only-permitted-here) Supabase server client. The
+ * engine tables live in Postgres via @workspace/db (see runs.ts / panel-configs.ts);
+ * this stays until Supabase-backed user data (positions, etc.) lands.
  */
 export async function getSessionUserId() {
   const session = await requireSession()
@@ -43,3 +44,23 @@ export async function getSessionUserId() {
   void createClient
   return session.user.id
 }
+
+// Engine persistence surface — the ONLY place @workspace/db is reached, always
+// after requireSession(). Route handlers import from here, never from the package.
+export { createRun, listRuns, getRunDetail, getOwnedRun, type RunDetail } from "./runs"
+export { listPanelConfigs, createPanelConfig } from "./panel-configs"
+export { runRegistry } from "./run-registry"
+
+// Validation schemas + event helpers re-exported so route handlers can validate
+// bodies and read the SSE event shape without importing @workspace/db directly.
+export {
+  runConfigSchema,
+  panelSchema,
+  panelConfigInputSchema,
+  isTerminal,
+  type RunConfig,
+  type RunEvent,
+  type Panel,
+  type PanelConfig,
+  type EngineRun,
+} from "@workspace/db"

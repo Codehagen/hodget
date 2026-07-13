@@ -29,6 +29,11 @@ export default [
               message:
                 "Import requireSession from @/lib/session, not the auth instance directly.",
             },
+            {
+              group: ["@workspace/db", "@workspace/db/*"],
+              message:
+                "Do not reach the engine database directly. Go through lib/dal — it validates the session before calling @workspace/db queries.",
+            },
           ],
         },
       ],
