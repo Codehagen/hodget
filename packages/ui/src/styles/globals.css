@@ -60,6 +60,80 @@
     --font-sans: var(--font-sans);
 }
 
+/*
+ * Motion easing tokens — generate Tailwind `ease-*` utilities (e.g. `ease-out-quart`).
+ * Curves distilled from Emil Kowalski's easing blueprint (https://animations.dev).
+ */
+@theme {
+    --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+    --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+    --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-ios-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/*
+ * Named animations, built on the easing + duration tokens. Generate Tailwind
+ * `animate-*` utilities (e.g. `animate-fade-in`). Entrances favor
+ * ease-out-quart + short durations; feedback loops stay subtle. Pair every
+ * animated element with `motion-reduce:animate-none` to honor "Reduce motion".
+ */
+@theme {
+    --animate-fade-in: fade-in var(--duration-base) var(--ease-out-quart);
+    --animate-scale-in: scale-in var(--duration-base) var(--ease-out-quart);
+    --animate-fade-in-blur: fade-in-blur var(--duration-slow) var(--ease-out-quart);
+    --animate-slide-up-fade: slide-up-fade var(--duration-page) var(--ease-out-quart);
+    --animate-slide-right-fade: slide-right-fade var(--duration-page) var(--ease-out-quart);
+    --animate-wiggle: wiggle 0.75s var(--ease-in-out-cubic) infinite;
+    --animate-blink: blink 1.4s var(--ease-out-cubic) infinite;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes fade-in-blur {
+    0% { opacity: 0; filter: blur(4px); }
+    50% { opacity: 0.6; filter: blur(0); }
+    100% { opacity: 1; filter: blur(0); }
+}
+@keyframes slide-up-fade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-right-fade {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes wiggle {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-4px) rotate(-4deg); }
+    30% { transform: translateX(6px) rotate(4deg); }
+    45% { transform: translateX(-6px) rotate(-2.4deg); }
+    60% { transform: translateX(2px) rotate(1.6deg); }
+    75% { transform: translateX(-1px) rotate(-0.8deg); }
+}
+@keyframes blink {
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
+}
+@keyframes track {
+    from { transform: translateX(0); }
+    to { transform: translateX(160px); }
+}
+@keyframes draw-stroke {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+}
+
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.141 0.005 285.823);
@@ -85,6 +159,15 @@
     --chart-4: oklch(0.52 0.105 223.128);
     --chart-5: oklch(0.45 0.085 224.283);
     --radius: 0.625rem;
+    /* Motion durations (Emil Kowalski's timing guidance). Use in CSS as
+       var(--duration-base), or via Tailwind arbitrary values:
+       duration-[var(--duration-base)]. */
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+    --duration-page: 400ms;
+    --duration-drawer: 450ms;   /* vaul-style sheets; pairs with --ease-ios-sheet */
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.141 0.005 285.823);
     --sidebar-primary: oklch(0.21 0.006 285.885);
@@ -136,4 +219,35 @@
   body {
     @apply bg-background text-foreground;
     }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+    }
+}
+
+/*
+ * Accessibility — honor the OS "Reduce motion" setting across the whole design
+ * system in one place. Reduce is not the same as none: keyframe animations are
+ * flattened (they mostly encode movement, including third-party components we
+ * don't hand-author), but transitions are restricted to non-movement properties
+ * instead of zeroed — opacity/color feedback that aids comprehension keeps
+ * running, while transform/translate/width/height changes snap. Dialogs re-opt
+ * into a plain fade.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: color, background-color, border-color, outline-color,
+      text-decoration-color, fill, stroke, opacity, box-shadow !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Modals should still fade, not teleport. The command palette
+     (data-command-dialog) stays instant. */
+  [data-slot="dialog-content"][data-open]:not([data-command-dialog]),
+  [data-slot="dialog-overlay"][data-open]:not(:has(~ [data-command-dialog])) {
+    animation: fade-in var(--duration-fast) var(--ease-out-quad) !important;
+  }
 }
