@@ -80,8 +80,8 @@ function summarizeTrade(result: BacktestResult, index: number): unknown {
     price: round(trade.fill.price, 6),
     currency: trade.fill.currency,
     filledAt: trade.fill.filledAt,
-    conviction: round(trade.signal.conviction, 8),
-    abstained: trade.signal.abstained,
+    conviction: round(trade.view.conviction, 8),
+    horizonDays: trade.view.horizonDays,
   }
 }
 

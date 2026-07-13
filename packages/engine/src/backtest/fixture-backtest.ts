@@ -3,12 +3,14 @@ import { createFixtureMarketData } from "../data/fixture/fixture-market-data.js"
 import type { DateRange } from "../data/market-data.js"
 import type { Mic } from "../data/symbols.js"
 import type { Currency } from "../data/types.js"
-import type { Analyst } from "../types.js"
+import type { ConstructionConfig } from "../portfolio/construct.js"
+import type { RiskConfig } from "../risk/gates.js"
+import type { Analyst, Committee } from "../types.js"
+import type { Ledger } from "../ledger/ledger.js"
 import { createTradingCalendar } from "./calendar.js"
 import { runBacktest, type BacktestConfig, type BacktestResult } from "./engine.js"
 import { createPriceBook } from "./pricebook.js"
 import type { SimBrokerCosts } from "./sim-broker.js"
-import type { SizingCaps } from "./sizing.js"
 
 /**
  * Convenience wiring for a {@link FixtureDataset}: builds the calendar, raw
@@ -16,7 +18,11 @@ import type { SizingCaps } from "./sizing.js"
  * engine itself decoupled from the fixture loader while giving tests a one-liner.
  */
 export interface FixtureBacktestOptions {
-  readonly analyst: Analyst
+  /** A single-analyst run. Provide this or `panel`. */
+  readonly analyst?: Analyst
+  /** A multi-analyst panel (combined by `committee`). */
+  readonly panel?: readonly Analyst[]
+  readonly committee?: Committee
   /** Defaults to every security in the dataset. */
   readonly securityIds?: readonly string[]
   /** Defaults to USD. */
@@ -24,10 +30,13 @@ export interface FixtureBacktestOptions {
   readonly initialCash: Partial<Record<Currency, number>>
   /** Defaults to the dataset's full span. */
   readonly range?: DateRange
-  readonly sizing?: SizingCaps
+  readonly construction?: ConstructionConfig
+  readonly risk?: RiskConfig
   readonly costs?: SimBrokerCosts
   readonly periodsPerYear?: number
+  readonly lookbackTradingDays?: number
   readonly decisionCutoffTime?: string
+  readonly ledger?: Ledger
 }
 
 export function runFixtureBacktest(
@@ -47,7 +56,9 @@ export function runFixtureBacktest(
   })
 
   const config: BacktestConfig = {
-    analyst: options.analyst,
+    ...(options.analyst !== undefined ? { analyst: options.analyst } : {}),
+    ...(options.panel !== undefined ? { panel: options.panel } : {}),
+    ...(options.committee !== undefined ? { committee: options.committee } : {}),
     securityIds: options.securityIds ?? dataset.securities.map((s) => s.securityId),
     data: createFixtureMarketData(dataset),
     prices,
@@ -56,12 +67,13 @@ export function runFixtureBacktest(
     baseCurrency,
     initialCash: options.initialCash,
     range: options.range ?? { from: dataset.meta.from, to: dataset.meta.to },
-    ...(options.sizing !== undefined ? { sizing: options.sizing } : {}),
+    ...(options.construction !== undefined ? { construction: options.construction } : {}),
+    ...(options.risk !== undefined ? { risk: options.risk } : {}),
     ...(options.costs !== undefined ? { costs: options.costs } : {}),
     ...(options.periodsPerYear !== undefined ? { periodsPerYear: options.periodsPerYear } : {}),
-    ...(options.decisionCutoffTime !== undefined
-      ? { decisionCutoffTime: options.decisionCutoffTime }
-      : {}),
+    ...(options.lookbackTradingDays !== undefined ? { lookbackTradingDays: options.lookbackTradingDays } : {}),
+    ...(options.decisionCutoffTime !== undefined ? { decisionCutoffTime: options.decisionCutoffTime } : {}),
+    ...(options.ledger !== undefined ? { ledger: options.ledger } : {}),
   }
   return runBacktest(config)
 }

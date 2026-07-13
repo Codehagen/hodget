@@ -66,6 +66,29 @@ export const targetViewSchema = z.object({
 })
 export type TargetView = z.infer<typeof targetViewSchema>
 
+/**
+ * The committee — the spine (plan 002). Many analyst views in, one target view
+ * per security out. Deterministic and configurable; designed so a
+ * correlation-adjusted or meta-model weighting can replace the v1
+ * conviction-weighted average without touching analysts or portfolio code.
+ */
+export interface Committee {
+  combine(signals: readonly Signal[]): TargetView[]
+}
+
+/**
+ * A construction-stage output: the desired long-only book weight for a security
+ * as a fraction of total equity (base currency). Sizing turns these into whole-
+ * share {@link Order}s against the current book; risk gates then clip them.
+ */
+export const targetWeightSchema = z.object({
+  securityId: z.string().min(1),
+  currency: currencySchema,
+  /** Desired fraction of equity in base currency. Long-only: `[0, 1]`. */
+  weight: z.number().min(0).max(1),
+})
+export type TargetWeight = z.infer<typeof targetWeightSchema>
+
 export const orderSchema = z.object({
   securityId: z.string().min(1),
   side: z.enum(["buy", "sell"]),

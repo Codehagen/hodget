@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { createEarningsDriftAnalyst } from "../analysts/quant/earnings-drift.js"
 import { FIXTURE_IDS, loadFixtureDataset } from "../data/fixture/dataset.js"
+import { InMemoryLedger } from "../ledger/ledger.js"
 import { notCovered, type MarketData } from "../data/market-data.js"
 import type { Analyst, AnalystContext, Signal } from "../types.js"
 import { runBacktest } from "./engine.js"
@@ -77,7 +78,8 @@ describe("runBacktest — FX affects base-currency equity", () => {
       baseCurrency: "USD",
       initialCash: { NOK: 100_000 },
       range: { from: days[0] as string, to: days[days.length - 1] as string },
-      sizing: { maxPositionPct: 1, maxGrossExposure: 1 },
+      construction: { maxWeightPerName: 1, maxGross: 1 },
+      risk: { maxPositionPct: 1, maxGross: 1 },
       costs: { commissionPerTrade: 0, slippageBps: 0, fxSpreadBps: 0 },
     })
 
@@ -101,7 +103,7 @@ describe("runBacktest over the committed fixtures", () => {
     })
     expect(result.trades.length).toBeGreaterThan(0)
     for (const trade of result.trades) {
-      const decisionDate = trade.signal.asOf.slice(0, 10)
+      const decisionDate = trade.view.asOf.slice(0, 10)
       const fillDate = trade.fill.filledAt.slice(0, 10)
       expect(fillDate > decisionDate).toBe(true)
     }
@@ -135,6 +137,49 @@ describe("runBacktest over the committed fixtures", () => {
         expect(trade.fill.filledAt.slice(0, 10)).not.toBe("2020-05-21")
       }
     }
+  })
+
+  it("backfills settled fills onto the ledger — ledger fills match result.trades", async () => {
+    const dataset = await loadFixtureDataset()
+    const ledger = new InMemoryLedger()
+    const result = await runFixtureBacktest(dataset, {
+      analyst: createEarningsDriftAnalyst(),
+      initialCash: { USD: 1_000_000 },
+      ledger,
+    })
+    expect(result.trades.length).toBeGreaterThan(0)
+
+    // Every fill the run produced must be attached to some decision on the ledger,
+    // not left as the empty list recorded at decision time (the M1 divergence).
+    const key = (f: { securityId: string; side: string; quantity: number; price: number; filledAt: string }) =>
+      `${f.filledAt}|${f.securityId}|${f.side}|${f.quantity}|${f.price}`
+    const ledgerFills = ledger.decisions().flatMap((d) => d.fills)
+    const tradeFills = result.trades.map((t) => t.fill)
+    expect(ledgerFills.length).toBe(tradeFills.length)
+    expect(ledgerFills.map(key).sort()).toEqual(tradeFills.map(key).sort())
+    // And each attached fill sits on a decision whose cutoff precedes the fill.
+    for (const decision of ledger.decisions()) {
+      for (const fill of decision.fills) {
+        expect(fill.filledAt > decision.asOf).toBe(true)
+      }
+    }
+  })
+
+  it("fires risk gates in the loop and records the clips on the ledger", async () => {
+    const dataset = await loadFixtureDataset()
+    const ledger = new InMemoryLedger()
+    await runFixtureBacktest(dataset, {
+      analyst: constantAnalyst(1),
+      initialCash: { USD: 1_000_000 },
+      // A punishingly small hard cap forces the sizing pipeline's orders to be
+      // clipped by the risk stage even at full conviction.
+      risk: { maxPositionPct: 0.001, volScaling: false, correlation: false },
+      ledger,
+    })
+    const actions = ledger.decisions().flatMap((d) => d.gateActions)
+    expect(actions.length).toBeGreaterThan(0)
+    expect(actions.every((a) => a.action === "clip" || a.action === "veto")).toBe(true)
+    expect(actions.some((a) => a.gate === "max-position")).toBe(true)
   })
 
   it("applies corporate actions to held positions on their ex-date (split + dividend)", async () => {

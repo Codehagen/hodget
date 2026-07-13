@@ -39,7 +39,7 @@
       "currency": "NOK",
       "filledAt": "2020-02-13T21:00:00Z",
       "conviction": 0.7,
-      "abstained": false
+      "horizonDays": 250
     },
     "last": {
       "securityId": "US-XNAS-SYNA",
@@ -49,7 +49,7 @@
       "currency": "USD",
       "filledAt": "2020-12-31T21:00:00Z",
       "conviction": 0.7,
-      "abstained": false
+      "horizonDays": 250
     }
   },
   "corporateActions": [
