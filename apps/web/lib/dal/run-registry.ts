@@ -1,33 +1,57 @@
 import "server-only"
 
-import { createRunEmitter, executeRun, RunRegistry, type EngineRun } from "@workspace/db"
+import {
+  createRunAnalystSource,
+  createRunEmitter,
+  executeRun,
+  RunRegistry,
+  setRunWorkflowId,
+  type EngineRun,
+} from "@workspace/db"
+import { start } from "workflow/api"
+
+import { executeRunWorkflow } from "@/workflows/execute-run"
 
 import { getDb } from "./db"
 
 /**
- * App-level wiring for the in-process run executor (plan 002 phase 5a).
+ * Starting a run's execution (plan 004).
  *
- * Each run gets its OWN emitter (so concurrent runs never cross-talk — the
- * guarantee proven in the db package's event tests); this registry is only a
- * runId → live-emitter lookup so the SSE route can find a running run's channel.
- * A run absent from the registry has finished, and callers fall back to its
- * persisted status.
+ * Default: durable execution on the Workflow DevKit — `start()` enqueues
+ * {@link executeRunWorkflow}, and the returned workflow run id is persisted so the
+ * SSE route can attach to that run's durable event stream. This retires the
+ * single-instance SSE limitation: the launching request and the SSE reader no
+ * longer need to share a Node process, because progress flows through the durable
+ * stream, not a process-local emitter.
  *
- * Single-instance assumption: the launching request and the SSE request must land
- * on the same server process for live streaming. That holds for a single Node
- * server and is acceptable for phase 5a; durable, cross-instance progress is a
- * `packages/jobs` (Trigger.dev) concern in a later phase. See the report's open
- * risks.
+ * Fallback (`RUN_EXECUTION=inline`): the original in-process path — one emitter
+ * per run in the registry below, executed fire-and-forget. Kept for local dev
+ * without a workflow backend and for the web test suite. The registry is only used
+ * by the inline path; the durable path never touches it.
  */
 export const runRegistry = new RunRegistry()
 
-/** Launch a queued run in the background and stream its progress via the registry. */
-export function launchRun(run: EngineRun): void {
+/**
+ * Inline execution: register a per-run emitter (so concurrent runs never
+ * cross-talk) and execute in-process after the POST responds. `executeRun` records
+ * its own failure and never throws, so nothing here can reject unhandled.
+ */
+function launchRunInline(run: EngineRun): void {
   const emitter = createRunEmitter(run.id)
   runRegistry.register(emitter)
-  // Fire-and-forget: the run executes after the POST responds. executeRun records
-  // its own failure and never throws, so nothing here can reject unhandled.
-  void executeRun({ sql: getDb(), run, emitter }).finally(() => {
-    runRegistry.unregister(run.id)
-  })
+  void executeRun({ sql: getDb(), run, emitter, analystSource: createRunAnalystSource() }).finally(
+    () => {
+      runRegistry.unregister(run.id)
+    },
+  )
+}
+
+/** Start a queued run: durable workflow by default, in-process when inline. */
+export async function startRun(run: EngineRun): Promise<void> {
+  if (process.env.RUN_EXECUTION === "inline") {
+    launchRunInline(run)
+    return
+  }
+  const { runId } = await start(executeRunWorkflow, [run.id])
+  await setRunWorkflowId(getDb(), run.id, runId)
 }

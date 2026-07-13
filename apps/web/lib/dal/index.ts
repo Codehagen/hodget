@@ -49,7 +49,7 @@ export async function getSessionUserId() {
 // after requireSession(). Route handlers import from here, never from the package.
 export { createRun, listRuns, getRunDetail, getOwnedRun, type RunDetail } from "./runs"
 export { listPanelConfigs, createPanelConfig } from "./panel-configs"
-export { runRegistry } from "./run-registry"
+export { runRegistry, startRun } from "./run-registry"
 
 // Validation schemas + event helpers re-exported so route handlers can validate
 // bodies and read the SSE event shape without importing @workspace/db directly.

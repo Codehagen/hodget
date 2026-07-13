@@ -16,7 +16,7 @@ import {
 import type { Sql } from "../client.js"
 import { PostgresLedger } from "../ledger/postgres-ledger.js"
 import { insertResult } from "../queries/results.js"
-import { setRunStatus } from "../queries/runs.js"
+import { clearRunArtifacts, setRunStatus } from "../queries/runs.js"
 import type { EngineRun } from "../schema.js"
 import { runConfigSchema, type RunConfig } from "./config.js"
 import type { RunEmitter } from "./events.js"
@@ -96,6 +96,11 @@ export async function executeRun(deps: ExecuteRunDeps): Promise<void> {
 
     const completedAt = new Date().toISOString()
     await sql.transaction(async (tx) => {
+      // Idempotent replace: a durable-workflow step retry re-runs this whole
+      // function, and the backtest is deterministic, so wipe any artifacts a prior
+      // attempt persisted before re-inserting. Keyed by run id, inside the same
+      // atomic transaction as the inserts.
+      await clearRunArtifacts(tx, run.id)
       await ledger.persist(tx, run.id)
       await insertResult(tx, {
         runId: run.id,
@@ -117,7 +122,14 @@ export async function executeRun(deps: ExecuteRunDeps): Promise<void> {
     // Last resort if the write rejects: the emitter still carries the failed event
     // to any live subscriber, and we log so the dropped persistence is visible.
     try {
-      await setRunStatus(sql, run.id, { status: "failed", error: message, completedAt: at })
+      // Clear any artifacts a prior (or partially completed) attempt persisted
+      // before marking the run failed, so a failed run never leaves orphaned
+      // decisions/fills/result rows behind. Same atomic transaction as the status
+      // write and keyed by run id, mirroring the completed path above.
+      await sql.transaction(async (tx) => {
+        await clearRunArtifacts(tx, run.id)
+        await setRunStatus(tx, run.id, { status: "failed", error: message, completedAt: at })
+      })
     } catch (persistError) {
       const persistMessage =
         persistError instanceof Error ? persistError.message : String(persistError)

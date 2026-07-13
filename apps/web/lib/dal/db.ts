@@ -1,6 +1,18 @@
 import "server-only"
 
-import { createPgSql, type PgSql } from "@workspace/db"
+import { createPgSql, type PgSql, type Sql } from "@workspace/db"
+
+/**
+ * Test-only seam (plan 004): point `getDb()` at an injected {@link Sql}, so the
+ * durable step logic (`runExecuteStep` in `run-workflow.ts`) can be integration
+ * tested against a PGlite database with no real Postgres pool. Production never
+ * sets it, so this is inert outside tests.
+ */
+let testDb: Sql | undefined
+
+export function __setTestDb(sql: Sql | undefined): void {
+  testDb = sql
+}
 
 /**
  * The app's Postgres handle for the engine tables.
@@ -14,7 +26,8 @@ import { createPgSql, type PgSql } from "@workspace/db"
  */
 let pool: PgSql | undefined
 
-export function getDb(): PgSql {
+export function getDb(): Sql {
+  if (testDb) return testDb
   pool ??= createPgSql()
   return pool
 }

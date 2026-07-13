@@ -51,6 +51,8 @@ export interface EngineRun {
   readonly error: string | null
   readonly createdAt: string
   readonly completedAt: string | null
+  /** The durable workflow run id (plan 004), or null for inline/legacy runs. */
+  readonly workflowRunId: string | null
 }
 
 export const runRowSchema = z
@@ -63,6 +65,9 @@ export const runRowSchema = z
     error: z.string().nullable(),
     created_at: isoTimestamp,
     completed_at: isoTimestamp.nullable(),
+    // Nullish: the column is absent from selects predating migration 0002 in the
+    // same way a null value means "ran inline / no durable stream".
+    workflow_run_id: z.string().nullable().optional(),
   })
   .transform(
     (row): EngineRun => ({
@@ -74,6 +79,7 @@ export const runRowSchema = z
       error: row.error,
       createdAt: row.created_at,
       completedAt: row.completed_at,
+      workflowRunId: row.workflow_run_id ?? null,
     }),
   )
 

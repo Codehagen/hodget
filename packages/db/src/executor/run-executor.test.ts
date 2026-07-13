@@ -76,6 +76,39 @@ describe("executeRun — happy path", () => {
     expect(types).toContain("progress")
     expect(types).toContain("analyst")
   })
+
+  it("is idempotent when re-run for the same run id (durable step retry)", async () => {
+    // A Workflow step retry re-executes this function; the deterministic backtest
+    // recomputes identical artifacts, and the persist transaction wipes the prior
+    // attempt's rows before re-inserting. Two runs must leave exactly one copy.
+    const run = await insertRun(db, {
+      ownerUserId: "u",
+      mode: "backtest",
+      config: BACKTEST_CONFIG,
+    })
+
+    await executeRun({ sql: db, run, emitter: collectEvents(run.id).emitter })
+    const firstDecisions = await getPersistedDecisions(db, run.id)
+    const firstFills = await listFillRowsByRun(db, run.id)
+    expect(firstDecisions.length).toBeGreaterThan(0)
+
+    // Re-run the (still queued in memory) run object a second time.
+    await executeRun({ sql: db, run, emitter: collectEvents(run.id).emitter })
+
+    // Exactly one result row (primary key would reject a naive double-insert; the
+    // clear-before-insert makes it a clean replace).
+    const result = await getResultByRun(db, run.id)
+    expect(result).not.toBeNull()
+
+    // No duplicated decisions or fills — same counts as the first run.
+    const secondDecisions = await getPersistedDecisions(db, run.id)
+    const secondFills = await listFillRowsByRun(db, run.id)
+    expect(secondDecisions.length).toBe(firstDecisions.length)
+    expect(secondFills.length).toBe(firstFills.length)
+
+    const finished = await getRunById(db, run.id)
+    expect(finished?.status).toBe("completed")
+  })
 })
 
 // A data source whose analyst-facing MarketData is a poisoned transport: every
@@ -114,6 +147,31 @@ describe("executeRun — failure path (fail-loud preserved)", () => {
     expect(events.at(-1)?.type).toBe("failed")
   })
 
+  it("clears prior artifacts when a re-execution fails before persist", async () => {
+    const run = await insertRun(db, {
+      ownerUserId: "u",
+      mode: "backtest",
+      config: BACKTEST_CONFIG,
+    })
+
+    // A first execution succeeds and persists decisions, fills, and a result row.
+    await executeRun({ sql: db, run, emitter: collectEvents(run.id).emitter })
+    expect((await getPersistedDecisions(db, run.id)).length).toBeGreaterThan(0)
+    expect(await getResultByRun(db, run.id)).not.toBeNull()
+
+    // A re-execution throws before persist; the failure path must clear the prior
+    // artifacts so nothing orphaned survives alongside the failed status.
+    await expect(
+      executeRun({ sql: db, run, emitter: collectEvents(run.id).emitter, dataSource: throwingSource }),
+    ).resolves.toBeUndefined()
+
+    const finished = await getRunById(db, run.id)
+    expect(finished?.status).toBe("failed")
+    expect(await getResultByRun(db, run.id)).toBeNull()
+    expect(await getPersistedDecisions(db, run.id)).toHaveLength(0)
+    expect(await listFillRowsByRun(db, run.id)).toHaveLength(0)
+  })
+
   it("never rejects even when the DB write recording the failure itself rejects", async () => {
     const run = await insertRun(db, {
       ownerUserId: "u",
@@ -122,15 +180,12 @@ describe("executeRun — failure path (fail-loud preserved)", () => {
     })
     const { events, emitter } = collectEvents(run.id)
 
-    // An Sql handle that rejects the terminal "failed" status write (its status
-    // param is bound as $2), so the failure-recording write itself fails. The
-    // earlier "running" write and reads still go to the real pglite db.
+    // An Sql handle whose transaction rejects, so the clear-then-fail write that
+    // records the failure cannot commit. The earlier "running" write and reads
+    // still go to the real pglite db (only the failure path opens a transaction).
     const failingSql: Sql = {
-      query: (text, params) =>
-        params?.[1] === "failed"
-          ? Promise.reject(new Error("db down while recording failure"))
-          : db.query(text, params),
-      transaction: (fn) => db.transaction(fn),
+      query: (text, params) => db.query(text, params),
+      transaction: () => Promise.reject(new Error("db down while recording failure")),
     }
 
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})

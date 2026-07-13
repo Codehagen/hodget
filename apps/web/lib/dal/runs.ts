@@ -15,7 +15,7 @@ import {
 import { requireSession } from "@/lib/session"
 
 import { getDb } from "./db"
-import { launchRun } from "./run-registry"
+import { startRun } from "./run-registry"
 
 /**
  * Runs DAL — every export validates the session first (requireSession) and scopes
@@ -23,7 +23,7 @@ import { launchRun } from "./run-registry"
  * (see migrations) and would be applied here as a membership check.
  */
 
-/** Create a backtest run for the current user and launch it in the background. */
+/** Create a backtest run for the current user and start its durable execution. */
 export async function createRun(config: RunConfig): Promise<EngineRun> {
   const session = await requireSession()
   const run = await insertRun(getDb(), {
@@ -31,7 +31,9 @@ export async function createRun(config: RunConfig): Promise<EngineRun> {
     mode: "backtest",
     config,
   })
-  launchRun(run)
+  // Enqueues the workflow (and persists its workflow_run_id) before returning, so
+  // the SSE route can attach to the durable stream immediately after the 201.
+  await startRun(run)
   return run
 }
 

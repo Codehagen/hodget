@@ -24,9 +24,10 @@ vi.mock("@workspace/db", () => ({
   getPersistedDecisions: vi.fn(),
 }))
 
-// Mocked so importing runs.ts opens no pool and constructs no registry.
+// Mocked so importing runs.ts opens no pool and constructs no registry, and never
+// reaches the workflow runtime (startRun replaces launchRun in plan 004).
 vi.mock("@/lib/dal/db", () => ({ getDb: vi.fn(() => ({})) }))
-vi.mock("@/lib/dal/run-registry", () => ({ launchRun: vi.fn(), runRegistry: {} }))
+vi.mock("@/lib/dal/run-registry", () => ({ startRun: vi.fn(), runRegistry: {} }))
 
 import { getOwnedRun } from "@/lib/dal/runs"
 import { requireSession } from "@/lib/session"

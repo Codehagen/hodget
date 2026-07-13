@@ -1,16 +1,31 @@
+import { getRun } from "workflow/api"
+
 import { notFound, unauthorized } from "@/lib/api"
 import { getOwnedRun, isTerminal, runRegistry, type EngineRun, type RunEvent } from "@/lib/dal"
+import { sseFromRunEvents, terminalEventForRun } from "@/lib/run-events-sse"
 import { getSession } from "@/lib/session"
 
 /**
- * GET /api/runs/[id]/events — Server-Sent Events streaming a run's live progress.
+ * GET /api/runs/[id]/events — Server-Sent Events streaming a run's progress.
  *
- * 401 without a session; 404 for a run that isn't the current user's. While the
- * run is executing in this process, its emitter is in the registry and every event
- * is forwarded until a terminal (completed/failed) event closes the stream. If the
- * run has already finished (no live emitter), the persisted terminal status is sent
- * once and the stream closes — so a late subscriber still learns the outcome.
+ * 401 without a session; 404 for a run that isn't the current user's.
+ *
+ * Durable path (the run has a `workflowRunId`): attach to the workflow run's
+ * durable event stream via `getRun(id).getReadable({ startIndex })` and transform
+ * each `RunEvent` to an SSE frame. `startIndex` (query param, default 0) lets a
+ * late subscriber replay from the beginning — strictly better than the legacy
+ * terminal-only replay, and it works across processes because the stream is
+ * durable, not process-local. This retires the single-instance SSE limitation.
+ *
+ * Inline / legacy path (no `workflowRunId`): the original in-process registry +
+ * persisted-terminal replay, unchanged.
  */
+const SSE_HEADERS = {
+  "content-type": "text/event-stream",
+  "cache-control": "no-cache, no-transform",
+  connection: "keep-alive",
+} as const
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -22,10 +37,44 @@ export async function GET(
   const run = await getOwnedRun(id)
   if (!run) return notFound()
 
+  // Durable path: read the workflow run's durable stream.
+  if (run.workflowRunId) {
+    try {
+      const startIndexParam = new URL(request.url).searchParams.get("startIndex")
+      const parsed = startIndexParam !== null ? Number.parseInt(startIndexParam, 10) : 0
+      // Clamp to a non-negative integer: a negative startIndex reaches WDK's
+      // getReadable where it means "last N", not "from N", and a non-numeric param
+      // parses to NaN. Either would silently change replay semantics, so floor to 0.
+      const startIndex = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
+      const source = getRun(run.workflowRunId).getReadable<RunEvent>({ startIndex })
+      return new Response(
+        sseFromRunEvents(source, {
+          onEndWithoutTerminal: async () => {
+            const latest = await getOwnedRun(id)
+            return latest ? terminalEventForRun(latest) : null
+          },
+        }),
+        { headers: SSE_HEADERS },
+      )
+    } catch {
+      // The durable run isn't attachable here (e.g. unknown to this world): fall
+      // through to replaying the persisted terminal status below.
+    }
+  }
+
+  return new Response(legacyEventStream(request, id, run), { headers: SSE_HEADERS })
+}
+
+/**
+ * The original in-process streaming path: forward the live registry emitter until
+ * a terminal event, or replay the persisted terminal status for a finished run.
+ * Used for inline-mode runs and any legacy row without a durable stream.
+ */
+function legacyEventStream(request: Request, id: string, run: EngineRun): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
   const emitter = runRegistry.get(id)
 
-  const stream = new ReadableStream<Uint8Array>({
+  return new ReadableStream<Uint8Array>({
     async start(controller) {
       let closed = false
       const close = () => {
@@ -44,18 +93,12 @@ export async function GET(
 
       // Replay a run's persisted terminal outcome, then close. Idempotent: if the
       // live subscription already delivered the terminal event, `closed` is set and
-      // both send() and close() no-op, so a client never sees it twice.
+      // both send() and close() no-op, so a client never sees it twice. Shares
+      // terminalEventForRun with the durable path so both synthesize the same frame.
       const replayTerminal = (r: EngineRun) => {
-        if (r.status === "completed") {
-          send({ type: "completed", runId: id, at: r.completedAt ?? new Date().toISOString() })
-          close()
-        } else if (r.status === "failed") {
-          send({
-            type: "failed",
-            runId: id,
-            error: r.error ?? "run failed",
-            at: r.completedAt ?? new Date().toISOString(),
-          })
+        const terminal = terminalEventForRun(r)
+        if (terminal) {
+          send(terminal)
           close()
         }
       }
@@ -90,14 +133,6 @@ export async function GET(
       // idempotent against a terminal event the subscription may already have sent.
       const latest = await getOwnedRun(id)
       if (latest) replayTerminal(latest)
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache, no-transform",
-      connection: "keep-alive",
     },
   })
 }

@@ -53,6 +53,31 @@ export async function setRunStatus(
   )
 }
 
+/** Record the durable workflow run id that owns this run's execution (plan 004). */
+export async function setRunWorkflowId(
+  sql: Sql,
+  runId: string,
+  workflowRunId: string,
+): Promise<void> {
+  await sql.query(`update engine_runs set workflow_run_id = $2 where id = $1`, [
+    runId,
+    workflowRunId,
+  ])
+}
+
+/**
+ * Delete a run's persisted artifacts (decisions, fills, result) so a re-executed
+ * run replaces them instead of double-inserting. Idempotent by run id — the key
+ * to a Workflow step retry being safe (plan 004). Fills cascade from decisions,
+ * but we delete them explicitly (order-independent) rather than lean on the FK.
+ * Call inside the same transaction as the re-insert.
+ */
+export async function clearRunArtifacts(sql: Sql, runId: string): Promise<void> {
+  await sql.query(`delete from engine_fills where run_id = $1`, [runId])
+  await sql.query(`delete from engine_decisions where run_id = $1`, [runId])
+  await sql.query(`delete from engine_results where run_id = $1`, [runId])
+}
+
 export async function getRunById(sql: Sql, id: string): Promise<EngineRun | null> {
   const rows = await sql.query(`select * from engine_runs where id = $1`, [id])
   return rows[0] ? runRowSchema.parse(rows[0]) : null

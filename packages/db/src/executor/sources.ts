@@ -1,10 +1,16 @@
 import {
   ANALYSTS,
+  AnthropicLlmClient,
   createFixtureMarketData,
+  createValueAnalyst,
   loadFixtureDataset,
+  MemoryResponseStore,
+  PromptCache,
+  VALUE_ANALYST_ID,
   type Analyst,
   type AnalystContext,
   type FixtureDataset,
+  type LlmClient,
   type MarketData,
 } from "@workspace/engine"
 
@@ -14,11 +20,11 @@ import {
  */
 
 /**
- * Resolves an analyst id to a ready {@link Analyst}. The default resolves the
- * engine's quant registry (no runtime dependencies). LLM personas need a per-run
- * model client and prompt cache, so an app that wants them provides a richer
- * source that constructs them per run — a module-global model client would break
- * multi-tenant runs (plan 002).
+ * Resolves an analyst id to a ready {@link Analyst}. {@link defaultAnalystSource}
+ * resolves the engine's quant registry only (no runtime dependencies). LLM
+ * personas need a per-run model client and prompt cache — a module-global client
+ * would break multi-tenant runs — so {@link createRunAnalystSource} (plan 004)
+ * constructs them per run and is what the app wires into a real run.
  */
 export interface AnalystSource {
   resolve(id: string): Analyst
@@ -34,6 +40,64 @@ export function defaultAnalystSource(): AnalystSource {
         )
       }
       return analyst
+    },
+  }
+}
+
+/**
+ * Configuration for a run's analyst source (plan 004, checkpoint item 3). The LLM
+ * client and prompt cache are **per run** — never module-global — so multi-tenant
+ * runs never share credentials or a cache. Defaults construct a per-run
+ * {@link AnthropicLlmClient} (API key resolved from `apiKey` → `ANTHROPIC_API_KEY`
+ * at construction) over a fresh in-memory {@link PromptCache}. Tests inject a
+ * `FakeLlmClient` via `llm`.
+ */
+export interface RunAnalystSourceConfig {
+  /** Model client for LLM personas. Default: a per-run {@link AnthropicLlmClient}. */
+  readonly llm?: LlmClient
+  /** Prompt cache for LLM personas. Default: a fresh in-memory cache. */
+  readonly cache?: PromptCache
+  /** Per-run API key, forwarded to the default client. Falls back to env. */
+  readonly apiKey?: string
+  /** Model id, forwarded to the default client and each LLM persona. */
+  readonly model?: string
+}
+
+/**
+ * An {@link AnalystSource} that resolves both quant analysts (via the engine
+ * registry) and LLM personas constructed per run. Quant ids resolve to ready
+ * registry instances; `llm.value` is built lazily via
+ * {@link createValueAnalyst} with this run's model client + prompt cache and
+ * memoized for the run. Unknown ids fail loud — same contract as
+ * {@link defaultAnalystSource}, extended with the LLM seam.
+ */
+export function createRunAnalystSource(config: RunAnalystSourceConfig = {}): AnalystSource {
+  const model = config.model
+  const personas = new Map<string, Analyst>()
+  // Built lazily on the first LLM persona: a quant-only panel must never
+  // construct a model client (which would require an API key it does not need).
+  let llm = config.llm
+  let cache = config.cache
+
+  return {
+    resolve(id) {
+      const quant = ANALYSTS[id]
+      if (quant) return quant
+
+      if (id === VALUE_ANALYST_ID) {
+        let persona = personas.get(id)
+        if (!persona) {
+          llm ??= new AnthropicLlmClient({ apiKey: config.apiKey, model })
+          cache ??= new PromptCache(new MemoryResponseStore())
+          persona = createValueAnalyst({ llm, cache, ...(model !== undefined ? { model } : {}) })
+          personas.set(id, persona)
+        }
+        return persona
+      }
+
+      throw new Error(
+        `unknown analyst id "${id}" — register it in the analyst source (LLM personas must be constructed per run)`,
+      )
     },
   }
 }

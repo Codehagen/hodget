@@ -3,9 +3,11 @@ import { createRun, listRuns, runConfigSchema } from "@/lib/dal"
 import { getSession } from "@/lib/session"
 
 /**
- * POST /api/runs — validate the body, create a run, launch it in the background,
- * and return the queued run (201). GET /api/runs — the current user's runs.
- * Both 401 without a session. All data access goes through lib/dal.
+ * POST /api/runs — validate the body, create a run, start its durable execution on
+ * the Workflow DevKit (or in-process when RUN_EXECUTION=inline), and return the
+ * queued run (201). Progress is streamed from GET /api/runs/[id]/events.
+ * GET /api/runs — the current user's runs. Both 401 without a session. All data
+ * access goes through lib/dal.
  */
 
 export async function POST(request: Request): Promise<Response> {

@@ -1,0 +1,11 @@
+-- 0002_workflow_run_id.sql — link a run to its durable workflow run (plan 004).
+--
+-- When a run is executed on the Workflow DevKit, `start()` returns a workflow run
+-- id (e.g. `wrun_…`). We persist it here so the SSE route can attach to that run's
+-- durable event stream via `getRun(workflow_run_id).getReadable(...)`. Rows with a
+-- null value ran inline (RUN_EXECUTION=inline) or predate this migration; the SSE
+-- route falls back to the in-process registry + terminal replay for those.
+--
+-- Idempotent (add column if not exists) so re-applying the migration set is safe,
+-- matching the thin runner's contract.
+alter table engine_runs add column if not exists workflow_run_id text;

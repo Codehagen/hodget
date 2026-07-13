@@ -37,10 +37,16 @@ export {
   type RunEventListener,
 } from "./executor/events.js"
 export {
+  createStreamRunEmitter,
+  type StreamRunEmitter,
+} from "./executor/stream-emitter.js"
+export {
+  createRunAnalystSource,
   defaultAnalystSource,
   fixtureDataSource,
   instrumentAnalyst,
   type AnalystSource,
+  type RunAnalystSourceConfig,
   type RunDataSource,
 } from "./executor/sources.js"
 export { executeRun, type ExecuteRunDeps } from "./executor/run-executor.js"

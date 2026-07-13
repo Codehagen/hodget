@@ -68,11 +68,18 @@ export function createRunEmitter(runId: string): RunEmitter {
 }
 
 /**
- * A runId → live emitter map. In-process only: the run executor registers its
- * emitter on start and removes it on completion, and the SSE handler looks it up.
- * A run absent from the registry has already finished (or never launched here) —
- * the caller falls back to the persisted run status. Injectable so tests and the
- * app each own their instance; there is no module-global default.
+ * A runId → live emitter map for the **in-process (inline) execution path**. The
+ * run executor registers its emitter on start and removes it on completion, and
+ * the inline SSE handler looks it up; a run absent from the registry has already
+ * finished (or never launched here) and the caller falls back to the persisted
+ * status. Injectable so tests and the app each own their instance; no module
+ * global.
+ *
+ * Superseded on the default path (plan 004): durable runs stream through the
+ * workflow run's persistent event stream ({@link createStreamRunEmitter} +
+ * `getRun(id).getReadable()`), not this registry — so the launching request and
+ * the SSE reader no longer need to share a process. The registry remains for the
+ * `RUN_EXECUTION=inline` fallback.
  */
 export class RunRegistry {
   private readonly emitters = new Map<string, RunEmitter>()

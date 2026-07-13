@@ -12,6 +12,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    // Route-handler tests run without a workflow runtime: force the in-process
+    // (inline) execution path so any unmocked startRun stays process-local.
+    env: { RUN_EXECUTION: "inline" },
   },
   resolve: {
     alias: {

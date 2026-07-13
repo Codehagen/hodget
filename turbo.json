@@ -8,7 +8,8 @@
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "ANTHROPIC_API_KEY",
-    "HODGET_LLM_MODEL"
+    "HODGET_LLM_MODEL",
+    "RUN_EXECUTION"
   ],
   "tasks": {
     "build": {
