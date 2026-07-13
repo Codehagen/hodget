@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -7,26 +9,27 @@ import {
 } from "@workspace/ui/components/sidebar"
 
 /**
- * Brand / workspace tile in the sidebar header. Single static workspace for now;
- * structured so it can later wrap a Base UI Menu switcher. Degrades to the logo
- * tile only when the sidebar collapses to icon mode.
+ * Brand row in the sidebar header. Single workspace, so this is a plain
+ * wordmark linking home — the shadcn logo-tile switcher pattern is reserved
+ * for when real workspace switching exists, and this component is the seam
+ * where that switcher would land. Icon-collapsed mode shows the "H" glyph,
+ * since the wordmark has no room.
  */
-export function WorkspaceSwitcher() {
+export function WorkspaceSwitcher({ href = "/dashboard" }: { href?: string }) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton size="lg">
-          <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-md bg-primary font-heading text-sm font-black text-primary-foreground">
+        <SidebarMenuButton
+          size="lg"
+          tooltip="Hodget"
+          render={<Link href={href} />}
+        >
+          <span className="truncate px-1 font-heading text-lg font-black tracking-tight group-data-[collapsible=icon]:hidden">
+            Hodget
+          </span>
+          <span className="hidden w-full text-center font-heading text-lg font-black group-data-[collapsible=icon]:block">
             H
-          </div>
-          <div className="grid flex-1 text-left leading-tight">
-            <span className="truncate font-heading text-sm font-bold">
-              Hodget
-            </span>
-            <span className="truncate text-xs text-muted-foreground">
-              Internal
-            </span>
-          </div>
+          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

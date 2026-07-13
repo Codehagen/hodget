@@ -37,7 +37,7 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <WorkspaceSwitcher />
+        <WorkspaceSwitcher href={basePath} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain basePath={basePath} />
