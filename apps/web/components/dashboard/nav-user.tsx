@@ -12,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
+import { Button } from "@workspace/ui/components/button"
 import {
   Menu,
   MenuContent,
@@ -111,26 +112,29 @@ export function NavUser({ user }: { user: NavUserData }) {
 
 /**
  * Footer slot for the public /demo shell. No real session, so there is nothing
- * to sign out of — a static, non-interactive identity makes clear you are
- * viewing sample data, paired with a "Sign up" call to action.
+ * to sign out of — a compact call-to-action card (the shadcn sidebar-footer
+ * pattern) states plainly that this is sample data and points at sign-up.
+ * Collapsed to icon mode, the card hides and a plain sign-up button remains.
  */
 export function NavDemoUser() {
   return (
     <SidebarMenu>
-      <SidebarMenuItem>
-        <div className="flex items-center gap-2 rounded-md p-2 text-left group-data-[collapsible=icon]:justify-center">
-          <Avatar className="size-8 rounded-md">
-            <AvatarFallback className="rounded-md">DU</AvatarFallback>
-          </Avatar>
-          <div className="grid flex-1 leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="truncate text-sm font-medium">Demo user</span>
-            <span className="truncate text-xs text-muted-foreground">
-              Viewing sample data
+      <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
+        <div className="flex flex-col gap-2.5 border border-border bg-card p-3">
+          <div className="grid gap-1 leading-tight">
+            <span className="text-sm font-medium">Exploring the demo</span>
+            <span className="text-xs text-muted-foreground">
+              Everything here is sample data. Create a free account to run
+              your own strategies.
             </span>
           </div>
+          <Button size="sm" className="w-full" render={<Link href="/sign-up" />}>
+            <HugeiconsIcon icon={UserAdd01Icon} size={16} />
+            Sign up
+          </Button>
         </div>
       </SidebarMenuItem>
-      <SidebarMenuItem>
+      <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
         <SidebarMenuButton
           tooltip="Sign up"
           render={<Link href="/sign-up" />}
