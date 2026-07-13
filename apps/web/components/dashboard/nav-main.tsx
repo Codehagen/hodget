@@ -15,21 +15,29 @@ import {
 
 import { NAV_GROUPS, NAV_SECONDARY, type NavItem } from "./nav-items"
 
-function itemIsActive(pathname: string, item: NavItem) {
-  if (item.href === "#") {
+// The index item (`exact`) is the section home — its href is the current
+// route's base (e.g. "/dashboard" or "/demo"), so the same nav tree serves both.
+function resolveHref(item: NavItem, basePath: string) {
+  return item.exact ? basePath : item.href
+}
+
+function itemIsActive(pathname: string, href: string, exact?: boolean) {
+  if (href === "#") {
     return false
   }
-  return item.exact
-    ? pathname === item.href
-    : pathname === item.href || pathname.startsWith(`${item.href}/`)
+  return exact
+    ? pathname === href
+    : pathname === href || pathname.startsWith(`${href}/`)
 }
 
 function NavList({
   items,
+  basePath,
   label,
   className,
 }: {
   items: NavItem[]
+  basePath: string
   label?: string
   className?: string
 }) {
@@ -38,33 +46,43 @@ function NavList({
     <SidebarGroup className={cn(className)}>
       {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
       <SidebarMenu>
-        {items.map((item) => (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton
-              isActive={itemIsActive(pathname, item)}
-              tooltip={item.title}
-              render={<Link href={item.href} />}
-            >
-              <HugeiconsIcon icon={item.icon} size={16} />
-              <span>{item.title}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
+        {items.map((item) => {
+          const href = resolveHref(item, basePath)
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                isActive={itemIsActive(pathname, href, item.exact)}
+                tooltip={item.title}
+                render={<Link href={href} />}
+              >
+                <HugeiconsIcon icon={item.icon} size={16} />
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )
 }
 
-export function NavMain() {
+export function NavMain({ basePath }: { basePath: string }) {
   return (
     <>
       {NAV_GROUPS.map((group) => (
-        <NavList key={group.label} items={group.items} label={group.label} />
+        <NavList
+          key={group.label}
+          items={group.items}
+          basePath={basePath}
+          label={group.label}
+        />
       ))}
     </>
   )
 }
 
-export function NavSecondary() {
-  return <NavList items={NAV_SECONDARY} className="mt-auto" />
+export function NavSecondary({ basePath }: { basePath: string }) {
+  return (
+    <NavList items={NAV_SECONDARY} basePath={basePath} className="mt-auto" />
+  )
 }

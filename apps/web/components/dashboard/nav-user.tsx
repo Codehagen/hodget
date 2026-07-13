@@ -1,11 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CreditCardAcceptIcon,
   Logout01Icon,
   UnfoldMoreDownIcon,
+  UserAdd01Icon,
   UserCircle02Icon,
 } from "@hugeicons/core-free-icons"
 
@@ -102,6 +104,40 @@ export function NavUser({ user }: { user: NavUserData }) {
             </MenuItem>
           </MenuContent>
         </Menu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+/**
+ * Footer slot for the public /demo shell. No real session, so there is nothing
+ * to sign out of — a static, non-interactive identity makes clear you are
+ * viewing sample data, paired with a "Sign up" call to action.
+ */
+export function NavDemoUser() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <div className="flex items-center gap-2 rounded-md p-2 text-left group-data-[collapsible=icon]:justify-center">
+          <Avatar className="size-8 rounded-md">
+            <AvatarFallback className="rounded-md">DU</AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm font-medium">Demo user</span>
+            <span className="truncate text-xs text-muted-foreground">
+              Viewing sample data
+            </span>
+          </div>
+        </div>
+      </SidebarMenuItem>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          tooltip="Sign up"
+          render={<Link href="/sign-up" />}
+        >
+          <HugeiconsIcon icon={UserAdd01Icon} size={16} />
+          <span>Sign up</span>
+        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   )
