@@ -468,7 +468,7 @@ export function RunDetailView({
         </div>
 
         <div className="min-w-0">
-          <DecisionLog />
+          <DecisionLog basePath={basePath} runId={run.id} />
         </div>
       </div>
     </div>

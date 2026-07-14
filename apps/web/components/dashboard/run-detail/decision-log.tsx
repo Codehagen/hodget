@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
   CheckmarkCircle02Icon,
+  Flowchart01Icon,
   Maximize01Icon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons"
@@ -314,7 +316,15 @@ function TraceStage({
   )
 }
 
-function SelectedDecision({ row }: { row: DecisionLogRow }) {
+function SelectedDecision({
+  row,
+  basePath,
+  runId,
+}: {
+  row: DecisionLogRow
+  basePath: string
+  runId: string
+}) {
   const trace = getDecisionTrace(row.decisionId)
   return (
     <div className="flex flex-col gap-4 border-t border-border px-(--card-spacing) pt-4">
@@ -335,6 +345,17 @@ function SelectedDecision({ row }: { row: DecisionLogRow }) {
             <span className="font-mono text-foreground">{row.decisionId}</span>
             <CopyButton value={row.decisionId} label="Copy decision ID" />
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-primary"
+            render={
+              <Link href={`${basePath}/runs/${runId}/decisions/${row.decisionId}`} />
+            }
+          >
+            <HugeiconsIcon icon={Flowchart01Icon} />
+            View decision map
+          </Button>
           <Button variant="outline" size="sm">
             <HugeiconsIcon icon={RefreshIcon} />
             Replay decision
@@ -359,7 +380,13 @@ function SelectedDecision({ row }: { row: DecisionLogRow }) {
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
-export function DecisionLog() {
+export function DecisionLog({
+  basePath,
+  runId,
+}: {
+  basePath: string
+  runId: string
+}) {
   const [selectedId, setSelectedId] = React.useState<string>(
     DECISION_LOG[0]?.id ?? ""
   )
@@ -426,7 +453,7 @@ export function DecisionLog() {
 
       {selectedRow ? (
         <div className="pt-4">
-          <SelectedDecision row={selectedRow} />
+          <SelectedDecision row={selectedRow} basePath={basePath} runId={runId} />
         </div>
       ) : null}
     </Card>

@@ -1,0 +1,97 @@
+export const metadata = {
+  title: "Reading the decision map",
+  summary:
+    "A position isn't a number — it's a path. The decision map turns one position's full trace into a node graph you can click through, stage by stage.",
+  publishedAt: "2026-07-14",
+  author: { name: "Christer Hagen", role: "Founder" },
+}
+
+A position in Hodget isn't a number. It's a path: a point-in-time snapshot,
+a set of independent analyst views, a committee that weighs them, a risk
+gate that can clip or veto, and — if the position survives — an execution.
+The decision map takes that path and draws it as a graph you can click
+through, node by node. [The NVDA decision map](/demo/runs/run_8c41cf/decisions/dec_c12f8b7a)
+is the live example everything below refers to.
+
+## Why a node graph, not a table
+
+A decision is a directed flow, not a list of rows. Several analysts feed
+into one committee — fan-in. The committee's output feeds a risk gate and,
+if it clears, an execution — fan-out. And the edges themselves carry
+meaning: a highlighted blue path traces the reasoning that actually
+produced the position, while a dashed edge marks an analyst whose view was
+excluded from the committee — a different-horizon call, say, that the
+committee chose not to weigh in. A table can show you all of that data, but
+it flattens the shape. It can't show you which path *mattered*. A graph
+keeps the shape, so the structure of the decision is the first thing you
+see, before you read a single number.
+
+## Why React Flow
+
+We build the canvas on [React Flow](https://reactflow.dev)
+(`@xyflow/react`) — a mature, accessible canvas primitive that gives us
+nodes, edges, viewport controls, and none of the opinions we don't want. We
+don't adopt React Flow's node theme. Every node on the map is one of
+Hodget's own house components: `StatusPill` for state, `ConvictionBar` and
+`AgreementBar` for the committee's numbers, tabular mono figures for
+prices and weights. React Flow positions and connects; Hodget's design
+system renders. The result is that a decision-map node looks exactly like
+the same data would look anywhere else in the product — no separate visual
+language to learn.
+
+## Read-only, on purpose
+
+The decision map is an explanation surface, not an editor. Nodes aren't
+draggable, aren't connectable, and there's no scroll-to-zoom or
+click-and-drag panning that fights you for the page's own scroll. The
+graph fits to view on load and stays put. Clicking a node is instant — no
+animation plays, because nothing is happening that deserves one. It just
+opens an inspector panel with that node's detail. Selection never mutates
+anything, and it shouldn't look like it might: on a page whose only job is
+to show you what already happened, motion is a claim about causality you
+don't want to make by accident. Hodget's product surfaces stay fast for
+the same reason — selection is not something to animate.
+
+## Deterministic layout, not an auto-layout engine
+
+We don't run an auto-layout algorithm over the graph. There's no ELK, no
+dagre, no solver picking node positions. Instead, layout is a pure
+function of the trace: each node's column (`x`) comes from its stage
+index, and its row (`y`) comes from its index within that stage.
+
+| Column | Stage |
+| ------ | ----- |
+| 1      | Point-in-time data |
+| 2      | Independent analyst views |
+| 3      | Committee |
+| 4      | Construction + risk gate |
+| 5      | Execution |
+
+Because the pipeline shape is fixed and known in advance, this is enough.
+The same decision always draws the same picture, computed the same way,
+with no layout pass that could shift a node between renders. Legibility is
+a property of the data, not of a solver's mood.
+
+## The map can't disagree with the header
+
+The graph is built from the same decision record that renders everything
+else on the run page — the point-in-time snapshot, each analyst's
+conviction, thesis, and weight, the committee's net view and exactly which
+analysts it included or excluded, the risk gate's clip or veto, and the
+resulting fill. If a decision was clipped, the risk-gate node shows the
+clip directly — a target reduced from, say, 8.50% to 6.00%, not a generic
+"reduced" label. If a decision never traded, there is no execution node at
+all, because there's no fill to show. None of this is a second summary
+computed separately and hoped to match the first. The header and the graph
+read the same record, so they can't drift apart — the same idea that runs
+through the rest of Hodget: nothing gets described that isn't derived from
+what actually happened.
+
+## Built to be read
+
+Open any node and you get the evidence behind it — timestamps, sources,
+the rendered context and prompt that produced it, the model that ran it —
+with a path to the full evidence if you want to go deeper than the node
+itself shows. That's the point of the whole surface: not a diagram of a
+decision, but the decision itself, laid out so you can read it. Go trace
+one yourself: [the NVDA decision map](/demo/runs/run_8c41cf/decisions/dec_c12f8b7a).
