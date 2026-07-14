@@ -4,7 +4,13 @@ import "./decisions-view.css"
 
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Calendar03Icon, Search01Icon } from "@hugeicons/core-free-icons"
+import {
+  Calendar03Icon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  Search01Icon,
+  Shield01Icon,
+} from "@hugeicons/core-free-icons"
 import { parseAsString, useQueryState } from "nuqs"
 
 import { cn } from "@workspace/ui/lib/utils"
@@ -37,6 +43,7 @@ import { AuditTab, EvidenceTab } from "./decision-tabs"
 import { DecisionFlow } from "./decision-flow"
 import { AdvisorRail } from "./inspector"
 import { analystNodeId } from "./layout"
+import { SummaryTab } from "./summary-tab"
 
 /* ------------------------------------------------------------------ */
 /* Tone helpers                                                        */
@@ -56,6 +63,32 @@ function actionTone(actionLine: string): string {
   if (actionLine === "No trade") return "text-muted-foreground"
   if (actionLine.startsWith("Sold")) return "text-destructive"
   return "text-success"
+}
+
+/**
+ * The rail's gate read as a soft icon + phrase — an amber shield for a
+ * safety-reduced position, a green check for a clean pass, a red slash for a
+ * veto. Keyed by the derived `gateWord` so every row stays honest.
+ */
+const GATE_META: Record<
+  string,
+  { icon: typeof Shield01Icon; className: string; phrase: string }
+> = {
+  Passed: {
+    icon: CheckmarkCircle02Icon,
+    className: "text-success",
+    phrase: "Passed",
+  },
+  Reduced: {
+    icon: Shield01Icon,
+    className: "text-warning",
+    phrase: "Reduced by safety",
+  },
+  Vetoed: {
+    icon: CancelCircleIcon,
+    className: "text-destructive",
+    phrase: "Vetoed",
+  },
 }
 
 /* ------------------------------------------------------------------ */
@@ -94,22 +127,20 @@ function RailRow({
       <span className={cn("text-xs font-medium", actionTone(item.actionLine))}>
         {item.actionLine}
       </span>
-      <div className="flex items-center gap-2 text-xs">
-        <span
-          className={cn(
-            "font-mono font-medium tabular-nums",
-            pnlToneClass(item.view)
-          )}
-        >
-          {formatSignedNumber(item.view)}
-        </span>
-        <span className={cn("font-medium", toneClass(item.gateTone))}>
-          {item.gateWord}
-        </span>
-      </div>
-      <span className="font-mono text-[11px] text-muted-foreground">
-        {item.runId}
-      </span>
+      {(() => {
+        const gate = GATE_META[item.gateWord] ?? GATE_META.Passed!
+        return (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 text-xs font-medium",
+              gate.className
+            )}
+          >
+            <HugeiconsIcon icon={gate.icon} size={13} className="shrink-0" />
+            {gate.phrase}
+          </span>
+        )
+      })()}
     </button>
   )
 }
@@ -235,7 +266,7 @@ function HeaderCard({ map }: { map: DecisionMap }) {
           className={approvedClass}
         />
         <KpiCell
-          label="Status"
+          label={kpis.outcomeLabel}
           value={kpis.statusLabel}
           className={toneClass(kpis.statusTone)}
         />
@@ -280,6 +311,7 @@ export function DecisionsView(_props: { basePath: string }) {
   )
   const [search, setSearch] = React.useState("")
   const [outcome, setOutcome] = React.useState<OutcomeFilter>("all")
+  const [tab, setTab] = React.useState("summary")
 
   // Fall back to the flagship decision if the URL carries an unknown id.
   const map =
@@ -338,8 +370,7 @@ export function DecisionsView(_props: { basePath: string }) {
             Decisions
           </h1>
           <p className="text-sm text-muted-foreground">
-            Understand what the fund decided, why, and what safety rules
-            changed.
+            See what the fund decided, why, and what safety rules changed.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -400,24 +431,32 @@ export function DecisionsView(_props: { basePath: string }) {
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <HeaderCard map={map} />
 
-          <Tabs defaultValue="explanation">
+          <Tabs value={tab} onValueChange={(value) => setTab(value as string)}>
             <TabsList variant="line">
-              <TabsTrigger value="explanation">Explanation</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="full">Full decision path</TabsTrigger>
               <TabsTrigger value="evidence">Evidence</TabsTrigger>
               <TabsTrigger value="audit">Audit &amp; replay</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="explanation" keepMounted className="pt-4">
+            <TabsContent value="summary" className="pt-4">
+              <SummaryTab map={map} onNavigate={(next) => setTab(next)} />
+            </TabsContent>
+
+            <TabsContent value="full" keepMounted className="pt-4">
               <div
                 className="decisions-map"
                 data-entrance={suppressEntrance ? "off" : "on"}
               >
-                <DecisionFlow
-                  key={map.id}
-                  map={map}
-                  selectedId={selectedId}
-                  onSelectedIdChange={handleSelectedIdChange}
-                />
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                  <DecisionFlow
+                    key={map.id}
+                    map={map}
+                    selectedId={selectedId}
+                    onSelectedIdChange={handleSelectedIdChange}
+                  />
+                  <AdvisorRail map={map} advisor={railAdvisor} />
+                </div>
               </div>
             </TabsContent>
 
@@ -430,8 +469,6 @@ export function DecisionsView(_props: { basePath: string }) {
             </TabsContent>
           </Tabs>
         </div>
-
-        <AdvisorRail map={map} advisor={railAdvisor} />
       </div>
 
       <p className="pt-2 text-center text-xs text-muted-foreground">

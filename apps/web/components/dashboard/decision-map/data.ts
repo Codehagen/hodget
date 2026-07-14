@@ -125,6 +125,80 @@ export type DecisionKpis = {
   approvedPct: number | null
   statusLabel: string
   statusTone: Tone
+  /** Label for the 4th cell — "Filled next session" when a fill landed, else "Outcome". */
+  outcomeLabel: string
+}
+
+/* ------------------------------------------------------------------ */
+/* Summary model — the "Summary-first" tab                             */
+/* ------------------------------------------------------------------ */
+
+/** One advisor view as the Summary tab reads it: name, kind, conviction, thesis. */
+export type SummaryView = {
+  name: string
+  kind: AnalystKind
+  conviction: number
+  word: ConvictionWord
+  thesis: string
+}
+
+/** "Why the fund bought" (or did not trade) — the supporting views. */
+export type SummaryWhy = {
+  /** Card title, e.g. "Why the fund bought" / "Why the fund did not trade". */
+  title: string
+  /** One-line intro, e.g. "Two compatible 10-day views supported the trade." */
+  intro: string
+  views: SummaryView[]
+  /** Footer, e.g. "These views shared the same 10-day horizon." */
+  footer: string
+}
+
+/** "What disagreed" — the dissent preserved but not blended. Null when none. */
+export type SummaryDisagreed = {
+  /** Intro, e.g. "Macro context was cautious." */
+  intro: string
+  view: SummaryView
+  /** Note under the dashed divider — why it was heard but not combined. */
+  note: string
+} | null
+
+/** The amber/red safety chip, or null when nothing was changed. */
+export type SummarySafetyTag = {
+  label: string
+  tone: "warning" | "destructive"
+} | null
+
+/** "What safety changed" — proposed vs approved sizing + the rule. */
+export type SummarySafety = {
+  proposedPct: number | null
+  approvedPct: number | null
+  proposedSide: Side | null
+  proposedSize: number | null
+  approvedSide: Side | null
+  approvedSize: number | null
+  tag: SummarySafetyTag
+  /** Reason text only (no "Reason:" prefix). */
+  reason: string
+  /** Whether the rule is deterministic (an analyst cannot override it). */
+  deterministic: boolean
+}
+
+/** One node on the "What happened next" horizontal timeline. */
+export type TimelineStep = {
+  /** Top mono line, e.g. "13:50" or "2025-05-16". Omitted when the step has none. */
+  time?: string
+  /** Label under the node. */
+  label: string
+  /** Final node renders as a green check instead of a blue dot. */
+  done?: boolean
+}
+
+/** The whole Summary tab, derived per decision so it can never contradict the map. */
+export type DecisionSummary = {
+  why: SummaryWhy
+  disagreed: SummaryDisagreed
+  safety: SummarySafety
+  timeline: TimelineStep[]
 }
 
 export type DecisionMap = {
@@ -156,6 +230,8 @@ export type DecisionMap = {
   risk: RiskGateNodeData
   /** Null when nothing was executed (no-trade or vetoed). */
   execution: ExecutionNodeData | null
+  /** The Summary tab's plain-language model, derived from the fields above. */
+  summary: DecisionSummary
   /** Analyst whose path is highlighted + selected by default (the lead view). */
   primaryAnalystId: string
 }
@@ -325,7 +401,7 @@ function buildAnalysts(row: DecisionLogRow): AnalystViewNodeData[] {
 // Flagship copy pinned to the mock. Non-flagship decisions derive equivalents.
 const FLAGSHIP_HEADLINE = "Bought 412 NVDA shares at $184.20"
 const FLAGSHIP_EXPLAINER =
-  "Two short-horizon advisors saw upside. Safety rules reduced the proposed position from 8.5% to 6.0% because technology exposure was already high."
+  "Value and earnings views both supported buying. Macro was cautious, and safety rules reduced the position because technology exposure was already high."
 
 function fmtPct(value: number): string {
   return `${value.toFixed(2)}%`
@@ -343,6 +419,51 @@ function committeeSentence(includedCount: number, netView: number, horizon: stri
   if (netView >= 0.15) return `The ${n} compatible ${horizon} ${noun} both supported buying.`
   if (netView <= -0.15) return `The ${n} compatible ${horizon} ${noun} pointed toward trimming.`
   return `The ${n} compatible ${horizon} ${noun} were inconclusive.`
+}
+
+/* ----- Summary-tab plain-language derivation ----- */
+
+const COUNT_WORD = ["No", "One", "Two", "Three", "Four", "Five"] as const
+
+function countWord(n: number): string {
+  return COUNT_WORD[n] ?? String(n)
+}
+
+/** "10d" → "10-day". */
+function horizonPhrase(horizon: string): string {
+  return horizon.replace(/d$/, "-day")
+}
+
+/** The dissent-card intro verb — matches the mock's "Macro context was cautious." */
+function dissentPhrase(word: ConvictionWord): string {
+  return word === "Cautious"
+    ? "was cautious"
+    : word === "Negative"
+      ? "leaned negative"
+      : word === "Positive"
+        ? "leaned positive"
+        : "was neutral"
+}
+
+function whyIntro(
+  isFlagship: boolean,
+  includedCount: number,
+  netView: number,
+  horizon: string,
+  traded: boolean
+): string {
+  if (isFlagship) return "Two compatible 10-day views supported the trade."
+  const n = countWord(includedCount)
+  const noun = includedCount === 1 ? "view" : "views"
+  const hp = horizonPhrase(horizon)
+  if (traded) {
+    if (netView >= 0.15) return `${n} compatible ${hp} ${noun} supported the trade.`
+    if (netView <= -0.15) return `${n} compatible ${hp} ${noun} supported trimming.`
+    return `${n} ${hp} ${noun} narrowly supported acting.`
+  }
+  if (netView <= -0.15) return `${n} ${hp} ${noun} leaned negative.`
+  if (netView >= 0.15) return `${n} ${hp} ${noun} were positive, but nothing cleared safety.`
+  return `${n} ${hp} ${noun} were mixed, with nothing decisive.`
 }
 
 /* ------------------------------------------------------------------ */
@@ -443,7 +564,7 @@ function buildDecisionMap(row: DecisionLogRow, runId: string): DecisionMap {
     actionLine = "No trade"
   } else if (clipped && construction) {
     headline = `Set ${row.ticker} target to ${fmtPct(toPct)}`
-    actionLine = `Target ${toPct.toFixed(1)}%`
+    actionLine = `Target reduced to ${toPct.toFixed(1)}%`
   } else if (construction) {
     headline = `Set ${row.ticker} target to ${fmtPct(toPct)}`
     actionLine = `Target ${toPct.toFixed(1)}%`
@@ -473,6 +594,7 @@ function buildDecisionMap(row: DecisionLogRow, runId: string): DecisionMap {
     approvedPct: construction ? risk.toPct : null,
     statusLabel,
     statusTone,
+    outcomeLabel: execution ? "Filled next session" : "Outcome",
   }
 
   // Explainer paragraph.
@@ -501,6 +623,89 @@ function buildDecisionMap(row: DecisionLogRow, runId: string): DecisionMap {
       : null
 
   const run = getRunById(runId)
+
+  /* ----- Summary tab (derived from the same pieces, so it can't disagree) ----- */
+  const traded = execution != null
+
+  const summaryViews: SummaryView[] = included.map((a) => ({
+    name: a.name,
+    kind: a.kind,
+    conviction: a.conviction,
+    word: a.word,
+    thesis: a.thesis,
+  }))
+
+  const why: SummaryWhy = {
+    title: !execution
+      ? "Why the fund did not trade"
+      : execution.side === "BUY"
+        ? "Why the fund bought"
+        : "Why the fund sold",
+    intro: whyIntro(isFlagship, included.length, row.committeeView, dominantHorizon, traded),
+    views: summaryViews,
+    footer: `These views shared the same ${horizonPhrase(dominantHorizon)} horizon.`,
+  }
+
+  const dissent = excluded[0]
+  const disagreed: SummaryDisagreed = dissent
+    ? {
+        intro: `${dissent.name} ${dissentPhrase(dissent.word)}.`,
+        view: {
+          name: dissent.name,
+          kind: dissent.kind,
+          conviction: dissent.conviction,
+          word: dissent.word,
+          thesis: dissent.thesis,
+        },
+        note: isFlagship
+          ? "Preserved as dissent, but not blended because it used a 21-day horizon."
+          : `Preserved as dissent, but not blended because it used a ${dissent.horizonDays}-day horizon.`,
+      }
+    : null
+
+  const safetyTag: SummarySafetyTag = vetoed
+    ? { label: "Position blocked", tone: "destructive" }
+    : clipped
+      ? { label: "Position reduced", tone: "warning" }
+      : null
+
+  const safety: SummarySafety = {
+    proposedPct: construction ? construction.proposedTargetPct : null,
+    approvedPct: construction ? risk.toPct : null,
+    proposedSide: construction ? construction.side : null,
+    proposedSize: construction ? construction.size : null,
+    approvedSide: vetoed ? null : risk.approvedSize > 0 ? risk.approvedSide : construction?.side ?? null,
+    approvedSize: vetoed ? 0 : risk.approvedSize,
+    tag: safetyTag,
+    reason: risk.reason,
+    deterministic: true,
+  }
+
+  // "What happened next" — honest per gate: no fill/ledger steps beyond the veto
+  // record on a veto, no fill node when nothing filled. "13:50" is the evidence
+  // cutoff time carried by the data node's knownAt.
+  const timeline: TimelineStep[] = [
+    { time: "13:50", label: "Evidence cutoff" },
+    { time: row.time.slice(0, 5), label: "Decision recorded" },
+  ]
+  if (vetoed) timeline.push({ label: "Safety vetoed it" })
+  else if (clipped) timeline.push({ label: "Safety reduced size" })
+  else if (hasPosition) timeline.push({ label: "Within safety limits" })
+  else timeline.push({ label: "No position to size" })
+
+  if (execution) {
+    timeline.push({
+      time: nextTradingDay(row.date),
+      label: `Filled at $${execution.price.toFixed(2)}`,
+    })
+    timeline.push({ label: "Recorded in immutable ledger", done: true })
+  } else if (vetoed) {
+    timeline.push({ label: "Veto recorded in ledger", done: true })
+  } else {
+    timeline.push({ label: "No trade recorded", done: true })
+  }
+
+  const summary: DecisionSummary = { why, disagreed, safety, timeline }
 
   return {
     id: row.decisionId,
@@ -547,6 +752,7 @@ function buildDecisionMap(row: DecisionLogRow, runId: string): DecisionMap {
     construction,
     risk,
     execution,
+    summary,
     primaryAnalystId: included[0]?.analystId ?? analysts[0]!.analystId,
   }
 }

@@ -8,6 +8,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useNodesState,
+  useReactFlow,
   type OnSelectionChangeParams,
 } from "@xyflow/react"
 
@@ -52,6 +53,26 @@ function Flow({
   const initialNodes = React.useMemo(() => buildNodes(map), [map])
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
   const edges = React.useMemo(() => buildEdges(map, selectedId), [map, selectedId])
+  const { fitView } = useReactFlow()
+  const canvasRef = React.useRef<HTMLDivElement>(null)
+
+  // The canvas is read-only (no user pan/zoom), so re-fit whenever the
+  // container resizes. This also covers the case that matters on the Decisions
+  // page: the Full-decision-path tab is `keepMounted`, so it first mounts
+  // hidden (0×0) while Summary is the default tab — a one-shot init `fitView`
+  // would strand the graph at the wrong zoom. Re-fitting on the hidden→visible
+  // resize lands it correctly, and makes the canvas responsive besides.
+  React.useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth > 0 && el.clientHeight > 0) {
+        fitView({ padding: 0.08, maxZoom: 1 })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fitView])
 
   // Drive selection from React Flow, which fires for pointer AND keyboard
   // (Enter/Space on a focused node) selection — onNodeClick alone was
@@ -66,7 +87,7 @@ function Flow({
   return (
     <div className="min-w-0 flex-1">
       <StageHeaders />
-      <div className="decision-map-canvas h-[480px] w-full">
+      <div ref={canvasRef} className="decision-map-canvas h-[480px] w-full">
         <ReactFlow
           nodes={nodes}
           edges={edges}
