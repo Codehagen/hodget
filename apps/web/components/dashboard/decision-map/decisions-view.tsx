@@ -439,8 +439,18 @@ export function DecisionsView(_props: { basePath: string }) {
               <TabsTrigger value="audit">Audit &amp; replay</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="summary" className="pt-4">
-              <SummaryTab map={map} onNavigate={(next) => setTab(next)} />
+            {/*
+             * keepMounted so returning to Summary never remounts the timeline —
+             * its one-time draw (summary-tab.tsx / decisions-view.css) is gated
+             * by the shared `suppressEntrance` flag, not by mount, so it plays
+             * once per page load and never on a tab return.
+             */}
+            <TabsContent value="summary" keepMounted className="pt-4">
+              <SummaryTab
+                map={map}
+                onNavigate={(next) => setTab(next)}
+                suppressEntrance={suppressEntrance}
+              />
             </TabsContent>
 
             <TabsContent value="full" keepMounted className="pt-4">

@@ -15,6 +15,8 @@ Audit provenance:
   @xyflow/react canvas) at commit `9ceb076` (2026-07-14).
 - 027-032: audit of the plain-language explainer rebuilds — Fund overview,
   Decisions, and Strategies dashboard pages — at commit `1752933` (2026-07-14).
+- 033: audit of the marketing landing page (`apps/web/app/page.tsx` + its
+  embedded decision-map canvas) at commit `9d9169e` (2026-07-14).
 
 ## Plans
 
@@ -52,6 +54,8 @@ Audit provenance:
 | [030](030-decision-node-accent-hover.md) | Decision-map node hover preserves semantic accent rings | MEDIUM | Affordance | DONE |
 | [031](031-decisions-polish.md) | Decisions polish (canvas legibility kept, rail snap, advisor crossfade) | LOW | Polish | DONE (031a kept-as-is: canvas is width-bound at 1440px) |
 | [032](032-strategies-version-history-buttons.md) | Strategies version-history inline buttons get sibling hover | LOW | Cohesion | DONE |
+| [033](033-landing-page-motion-fixes.md) | Landing page motion fixes (hero intro once-per-load, footer duration, canvas scroll-entrance) | MEDIUM/LOW | Frequency / Cohesion / Missed opportunity | DONE |
+| [034](034-summary-tab-timeline-draw.md) | Decisions Summary tab: timeline one-time draw + Open-evidence focus ring | LOW | Missed opportunity / Accessibility | DONE |
 
 ## Recommended execution order & dependencies
 
@@ -173,3 +177,50 @@ Rejected (not implemented, by design):
 - **Recent-decisions expanded-detail fade** — restraint; the instant expand is the
   settled behavior (Design.md frequency rule, already noted in the card's doc
   comment).
+
+### Plan 033 (Landing page audit)
+
+Three fixes to the marketing landing page (`apps/web/app/page.tsx`) and the
+decision-map canvas it embeds, verified in headless Chromium against `/` and
+`/demo/decisions`, zero app console errors. Two new colocated client wrappers
+live under `apps/web/components/landing/`:
+
+- **033a** — hero intro plays once per full page load, never on back-nav
+  (`intro-gate.tsx`). Module-scoped `played` flag read in a `useState`
+  initializer (no flash, no hydration mismatch, resets on hard reload so the
+  intro replays there). Flipped in a Strict-Mode-safe `useEffect`, **not** on
+  `animationend` — in dev the animation finishes before hydration attaches the
+  handler, so `animationend` is missed and the intro replays (measured).
+- **033b** — footer link hover swapped `--duration-fast` → `--duration-instant`
+  (the color-only-hover idiom).
+- **033c** — landing canvas entrance defers to first view via a one-shot
+  IntersectionObserver (`canvas-reveal.tsx`, threshold 0.25). `DecisionFlow`/
+  `DecisionCanvas` gained an optional `entrance?: boolean` prop that renders a
+  `data-entrance` gate on `.decision-map-canvas`; **omit = current behavior**, so
+  `/demo/decisions` and the per-run pages are untouched (their canvas has no
+  `data-entrance` attribute; decisions-view's own ancestor gate is separate). The
+  suppression rule lives in a new colocated `canvas-reveal.css`, mirroring the
+  `decisions-view.css` consumer-side gate. Not committed per task scope; another
+  agent concurrently edited `summary-tab.tsx` / `decisions-view.css` (untouched
+  here).
+
+### Plan 034 (Decisions Summary-tab audit)
+
+Two fixes on the Decisions **Summary** tab
+(`apps/web/components/dashboard/decision-map/summary-tab.tsx`), verified in
+headless Chromium against `/demo/decisions`, both themes, zero console errors:
+
+- **034A** — the "Open evidence" link-button gains the house
+  `focus-visible:ring-1 focus-visible:ring-ring/50` alongside its existing
+  underline (matches `button.tsx`).
+- **034B** — the "What happened next" timeline draws once on first page load
+  (line `scaleX` left-to-right + staggered node fade). It reuses the page's
+  existing `suppressEntrance`/`data-entrance` gate (the same one that suppresses
+  the canvas entrance on swaps): keyframes are scoped under
+  `.summary-timeline[data-entrance="on"]` in `decisions-view.css`, so a rail
+  swap or tab return drops `animation-name` and never replays. The Summary
+  `<TabsContent>` also gained `keepMounted` to stop a pre-first-swap tab-return
+  from remounting and replaying. Reduced motion is `no-preference`-gated →
+  static and fully visible (no `backwards`-fill flash). Not committed per task
+  scope; another agent concurrently edited app/page.tsx / decision-canvas.tsx /
+  decision-flow.tsx (untouched here).

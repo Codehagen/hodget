@@ -14,7 +14,18 @@ import { analystNodeId } from "./layout"
  * node is selected (default: the lead view) and holds that advisor when a
  * non-advisor node is inspected.
  */
-export function DecisionCanvas({ map }: { map: DecisionMap }) {
+export function DecisionCanvas({
+  map,
+  entrance,
+}: {
+  map: DecisionMap
+  /**
+   * Forwarded to {@link DecisionFlow} to gate the one-time entrance stagger.
+   * Omit for the default (plays on mount); pass a boolean to defer play (e.g.
+   * on-scroll on the landing page).
+   */
+  entrance?: boolean
+}) {
   const [selectedId, setSelectedId] = React.useState<string | null>(
     analystNodeId(map.primaryAnalystId)
   )
@@ -39,6 +50,7 @@ export function DecisionCanvas({ map }: { map: DecisionMap }) {
         map={map}
         selectedId={selectedId}
         onSelectedIdChange={handleSelectedIdChange}
+        entrance={entrance}
       />
       <AdvisorRail map={map} advisor={advisor} />
     </div>

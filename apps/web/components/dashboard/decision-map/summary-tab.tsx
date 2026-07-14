@@ -239,16 +239,32 @@ function SafetyCard({ summary }: { summary: DecisionMap["summary"] }) {
 /* What happened next — horizontal timeline                            */
 /* ------------------------------------------------------------------ */
 
-function TimelineCard({ summary }: { summary: DecisionMap["summary"] }) {
+function TimelineCard({
+  summary,
+  suppressEntrance,
+}: {
+  summary: DecisionMap["summary"]
+  suppressEntrance: boolean
+}) {
   const { timeline } = summary
   const inset = `${50 / timeline.length}%`
   return (
     <section className={cn(PANEL, "flex flex-col gap-5 p-5")}>
       <CardTitle>What happened next</CardTitle>
-      <div className="relative">
+      {/*
+       * One-time entrance (fix 034): the line draws left-to-right (scaleX) while
+       * the nodes fade in behind it, staggered. Gated by `data-entrance` — it
+       * flips to "off" after the first decision swap, so decisions-view.css
+       * suppresses the keyframes on every later rail click / tab return. See the
+       * `.summary-timeline` block there.
+       */}
+      <div
+        className="summary-timeline relative"
+        data-entrance={suppressEntrance ? "off" : "on"}
+      >
         {/* Connecting line, masked behind each node's ring. */}
         <div
-          className="absolute top-2.5 h-px bg-info"
+          className="summary-timeline-line absolute top-2.5 h-px bg-info"
           style={{ left: inset, right: inset }}
           aria-hidden
         />
@@ -256,7 +272,8 @@ function TimelineCard({ summary }: { summary: DecisionMap["summary"] }) {
           {timeline.map((step, i) => (
             <li
               key={`${step.label}-${i}`}
-              className="flex flex-1 flex-col items-center gap-2 px-1 text-center"
+              className="summary-timeline-node flex flex-1 flex-col items-center gap-2 px-1 text-center"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <span className="flex size-5 items-center justify-center bg-background">
                 {step.done ? (
@@ -324,7 +341,7 @@ function CtaBand({
           <button
             type="button"
             onClick={() => onNavigate("evidence")}
-            className="text-xs font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:underline"
+            className="text-xs font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:underline focus-visible:ring-1 focus-visible:ring-ring/50"
           >
             Open evidence
           </button>
@@ -474,9 +491,16 @@ function DetailRows({ map }: { map: DecisionMap }) {
 export function SummaryTab({
   map,
   onNavigate,
+  suppressEntrance,
 }: {
   map: DecisionMap
   onNavigate: (tab: "full" | "evidence") => void
+  /**
+   * Mirrors the page's shared entrance gate (see decisions-view.tsx): `false`
+   * on the first page load so the timeline draws once, then `true` from the
+   * first decision swap onward to keep the draw from replaying on rail clicks.
+   */
+  suppressEntrance: boolean
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -485,7 +509,7 @@ export function SummaryTab({
         <DisagreedCard summary={map.summary} />
         <SafetyCard summary={map.summary} />
       </div>
-      <TimelineCard summary={map.summary} />
+      <TimelineCard summary={map.summary} suppressEntrance={suppressEntrance} />
       <CtaBand onNavigate={onNavigate} />
       <DetailRows map={map} />
     </div>

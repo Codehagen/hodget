@@ -45,10 +45,12 @@ function Flow({
   map,
   selectedId,
   onSelectedIdChange,
+  entrance,
 }: {
   map: DecisionMap
   selectedId: string | null
   onSelectedIdChange: (id: string | null) => void
+  entrance?: boolean
 }) {
   const initialNodes = React.useMemo(() => buildNodes(map), [map])
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
@@ -87,7 +89,13 @@ function Flow({
   return (
     <div className="min-w-0 flex-1">
       <StageHeaders />
-      <div ref={canvasRef} className="decision-map-canvas h-[480px] w-full">
+      <div
+        ref={canvasRef}
+        className="decision-map-canvas h-[480px] w-full"
+        data-entrance={
+          entrance === undefined ? undefined : entrance ? "on" : "off"
+        }
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -125,14 +133,27 @@ export function DecisionFlow({
   map,
   selectedId,
   onSelectedIdChange,
+  entrance,
 }: {
   map: DecisionMap
   selectedId: string | null
   onSelectedIdChange: (id: string | null) => void
+  /**
+   * Controls the one-time entrance stagger. Omit (default) for the current
+   * behavior — the stagger plays on mount. Pass a boolean to gate it via a
+   * `data-entrance` attribute so a parent can defer play (e.g. until the canvas
+   * scrolls into view): `false` suppresses, `true` plays.
+   */
+  entrance?: boolean
 }) {
   return (
     <ReactFlowProvider>
-      <Flow map={map} selectedId={selectedId} onSelectedIdChange={onSelectedIdChange} />
+      <Flow
+        map={map}
+        selectedId={selectedId}
+        onSelectedIdChange={onSelectedIdChange}
+        entrance={entrance}
+      />
     </ReactFlowProvider>
   )
 }

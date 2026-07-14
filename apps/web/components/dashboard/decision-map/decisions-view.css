@@ -18,3 +18,50 @@
 .decisions-map[data-entrance="off"] .decision-map-canvas .react-flow__edges {
   animation-name: none;
 }
+
+/*
+ * Fix 034 — "What happened next" timeline, one-time draw.
+ *
+ * The Summary tab is the default view and its content re-keys per rail
+ * decision, so this must play ONCE per page load, never on a swap. It reuses
+ * the page's shared entrance gate: TimelineCard carries `data-entrance`, driven
+ * by the same `suppressEntrance` flag as the canvas above — "on" on first load,
+ * "off" from the first decision change onward. Scoping the keyframes under
+ * `[data-entrance="on"]` means a later swap (or a keepMounted-defeating remount)
+ * simply drops the animation-name, so nothing replays.
+ *
+ * The connecting line draws left-to-right via `scaleX` (origin-left); the nodes
+ * fade in behind it, staggered by an inline `animation-delay` on each <li>
+ * (0/60/120… ms) with `animation-fill-mode: backwards` so a not-yet-reached node
+ * starts invisible. Transform/opacity only — no layout properties.
+ *
+ * Reduced motion: the whole block is gated on `no-preference`, so under
+ * `reduce` there is no animation-name at all — `backwards` is inert without a
+ * running animation, and the inline delay is harmless, so every node and the
+ * line render fully visible immediately (no flash from the fill-mode). Keyframes
+ * omit their end frame to settle on each element's natural value (scaleX 1 /
+ * opacity 1).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .summary-timeline[data-entrance="on"] .summary-timeline-line {
+    transform-origin: left center;
+    animation: summary-timeline-draw var(--duration-slow) var(--ease-out-quart);
+  }
+
+  .summary-timeline[data-entrance="on"] .summary-timeline-node {
+    animation: summary-timeline-node var(--duration-base) var(--ease-out-quart)
+      backwards;
+  }
+}
+
+@keyframes summary-timeline-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes summary-timeline-node {
+  from {
+    opacity: 0;
+  }
+}

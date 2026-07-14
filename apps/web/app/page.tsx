@@ -2,8 +2,9 @@ import Link from "next/link"
 
 import { Button } from "@workspace/ui/components/button"
 
-import { DecisionCanvas } from "@/components/dashboard/decision-map/decision-canvas"
 import { DEFAULT_TODAY_ID, getTodayDecisionMap } from "@/components/dashboard/decision-map/data"
+import { CanvasReveal } from "@/components/landing/canvas-reveal"
+import { IntroGate } from "@/components/landing/intro-gate"
 import { constructMetadata, SITE_NAME } from "@/lib/metadata"
 
 export const metadata = constructMetadata({
@@ -19,7 +20,7 @@ export default function Page() {
     <div className="flex min-h-svh flex-col">
       <main className="flex flex-1 flex-col">
         <section className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-20 sm:py-24">
-          <div className="motion-safe:animate-slide-up-fade flex flex-col gap-6">
+          <IntroGate className="flex flex-col gap-6">
             <span className="font-heading text-sm font-black tracking-tight text-muted-foreground">
               hodget
             </span>
@@ -39,12 +40,12 @@ export default function Page() {
                 Read the blog
               </Button>
             </div>
-          </div>
+          </IntroGate>
         </section>
 
         <section className="mx-auto flex max-w-6xl flex-col gap-4 px-6 pb-24">
           <div className="rounded-none bg-card p-4 ring-1 ring-foreground/10">
-            <DecisionCanvas map={map} />
+            <CanvasReveal map={map} />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
@@ -68,13 +69,13 @@ export default function Page() {
           <div className="flex items-center gap-6">
             <Link
               href="/blog"
-              className="transition-colors duration-[var(--duration-fast)] hover:text-foreground"
+              className="transition-colors duration-[var(--duration-instant)] hover:text-foreground"
             >
               Blog
             </Link>
             <Link
               href="/demo"
-              className="transition-colors duration-[var(--duration-fast)] hover:text-foreground"
+              className="transition-colors duration-[var(--duration-instant)] hover:text-foreground"
             >
               Demo
             </Link>

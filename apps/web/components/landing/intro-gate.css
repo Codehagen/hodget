@@ -1,0 +1,11 @@
+/*
+ * Hero intro gate — suppress the one-time `slide-up-fade` keyframe on any mount
+ * after the first per page load (i.e. a back-nav to the landing page). IntroGate
+ * sets `data-intro="seen"` from a module-scoped "has played" flag; nulling only
+ * `animation-name` (not the shorthand) leaves the `motion-safe:animate-slide-up-fade`
+ * class in place while stopping it from running. Mirrors the decisions-view
+ * entrance-gate precedent (decisions-view.css).
+ */
+.hero-intro[data-intro="seen"] {
+  animation-name: none;
+}
