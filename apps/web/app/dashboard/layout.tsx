@@ -6,7 +6,14 @@ import {
 } from "@workspace/ui/components/sidebar"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
+import { constructMetadata } from "@/lib/metadata"
 import { requireSession } from "@/lib/session"
+
+// Authenticated surface — keep it out of search indexes.
+export const metadata = constructMetadata({
+  title: "Dashboard",
+  noIndex: true,
+})
 
 /**
  * Shared shell for every /dashboard/* route: the sidebar + a slim top bar with

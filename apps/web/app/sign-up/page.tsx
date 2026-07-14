@@ -2,6 +2,13 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { constructMetadata } from "@/lib/metadata"
+
+export const metadata = constructMetadata({
+  title: "Sign up",
+  canonicalUrl: "/sign-up",
+})
+
 import {
   Card,
   CardContent,

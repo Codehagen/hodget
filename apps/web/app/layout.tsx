@@ -3,9 +3,12 @@ import { Geist, Geist_Mono, Inter } from "next/font/google"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import "@workspace/ui/globals.css"
+import { constructMetadata } from "@/lib/metadata"
 import { ThemeProvider } from "@/components/theme-provider"
 import { QueryProvider } from "@/components/query-provider"
 import { cn } from "@workspace/ui/lib/utils";
+
+export const metadata = constructMetadata()
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 

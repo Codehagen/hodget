@@ -1,0 +1,84 @@
+export const metadata = {
+  title: "Introducing Hodget",
+  summary:
+    "Hodget is an AI hedge fund engine: a committee of AI analysts that debates every position, a risk gate that can veto them, and a run log you can read end to end.",
+  publishedAt: "2026-07-13",
+  author: { name: "Christer Hagen", role: "Founder" },
+  image: "/blog/introducing-hodget.svg",
+  ogImage: "/blog/introducing-hodget.png",
+}
+
+Most AI trading tools give you a number and ask you to trust it. Hodget is
+built on the opposite bet: **every decision should come with its reasoning
+attached**. A run in Hodget produces the full paper trail — the signals each
+analyst saw, the thesis they argued, how the committee weighed the
+disagreement, and what the risk gate clipped or vetoed before anything became
+a position.
+
+## How a run works
+
+A run is one complete pass of the engine over a universe of tickers. It moves
+through five stages, and each stage writes its decisions to the run log:
+
+![The Hodget run pipeline: point-in-time data flows to analysts, the committee, the risk gate, and finally next-session fills.](/blog/introducing-hodget-pipeline.svg)
+
+1. **Data.** The engine assembles a point-in-time snapshot: prices,
+   fundamentals, and derived features as they were known on the run date.
+   No lookahead — a backtest run in July sees exactly what a live run would
+   have seen.
+2. **Analysts.** A panel of AI analysts evaluates each ticker independently.
+   Each analyst has a distinct style — value, momentum, quality, sentiment —
+   and produces a directional signal with a written thesis.
+3. **Committee.** The signals meet. The committee weighs agreement and
+   disagreement into a single conviction score per ticker, and the debate is
+   preserved, not averaged away.
+4. **Risk gate.** Position sizing runs through hard constraints: exposure
+   caps, concentration limits, liquidity floors. The gate can clip a position
+   down or veto it outright, and it records why.
+5. **Fills.** Surviving targets become orders filled at the next session —
+   the engine never assumes it can trade on the close it just observed.
+
+> The run log is the product. Performance charts tell you *what* happened;
+> the log tells you *why* — which is the part you need when you decide
+> whether to trust the next run.
+
+## What the demo shows
+
+The [live demo](/demo) walks through this with deterministic mock data, so
+you can explore every surface without an account:
+
+| Surface    | What you see                                              |
+| ---------- | --------------------------------------------------------- |
+| Dashboard  | Portfolio equity curve, exposure, and recent run activity  |
+| Runs       | Every run with its full decision timeline                  |
+| Strategies | The strategy definitions runs execute against              |
+| Analysts   | The panel: each analyst's style, signals, and hit rate     |
+| Data       | Market coverage, exchange routing, and the point-in-time policy |
+
+Open any run and you get the decisions timeline: signals per analyst,
+conviction, the committee's reasoning, and every gate clip or veto with its
+constraint named.
+
+## Built to be read
+
+Hodget is TypeScript end to end, and the engine's contracts are plain,
+inspectable types. A committee decision, for example, is just data:
+
+```ts
+interface CommitteeDecision {
+  ticker: string
+  conviction: number // -1 (strong short) … 1 (strong long)
+  thesis: string
+  dissent: AnalystSignal[] // preserved, never averaged away
+}
+```
+
+That is the design principle throughout: no black boxes, no scores without
+reasoning, nothing you cannot open and inspect.
+
+## What's next
+
+The engine runs durably in production today, and the demo tells the full
+story with mock data. Next up: wiring live runs into the dashboard, expanding
+market data coverage, and opening up strategy configuration. If you want to
+follow along, [try the demo](/demo) or [sign up](/sign-up).
