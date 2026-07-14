@@ -16,6 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   useChartAnimation,
+  chartAnimationProps,
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 
@@ -140,6 +141,7 @@ export function RunEquityChart({
             strokeWidth={1.5}
             dot={false}
             isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
           />
         </LineChart>
       </ChartContainer>
@@ -202,6 +204,7 @@ export function RunEquityChart({
             fill="url(#fillRunDrawdown)"
             strokeWidth={1}
             isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
           />
         </AreaChart>
       </ChartContainer>

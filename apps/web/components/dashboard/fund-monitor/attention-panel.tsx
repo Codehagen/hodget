@@ -35,7 +35,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
   return (
     <button
       type="button"
-      className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-[var(--duration-instant)] hover:bg-muted/50 motion-reduce:transition-none"
+      className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left outline-none transition-colors duration-[var(--duration-instant)] hover:bg-muted/50 focus-visible:bg-muted/60"
     >
       <HugeiconsIcon
         icon={meta.icon}
@@ -114,7 +114,7 @@ export function AttentionPanel() {
 
       <button
         type="button"
-        className="flex min-h-11 items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors duration-[var(--duration-instant)] hover:bg-muted/50 motion-reduce:transition-none"
+        className="flex min-h-11 items-center justify-between gap-2 px-3 py-2.5 text-left outline-none transition-colors duration-[var(--duration-instant)] hover:bg-muted/50 focus-visible:bg-muted/60"
       >
         <span className="flex items-center gap-2">
           <HugeiconsIcon

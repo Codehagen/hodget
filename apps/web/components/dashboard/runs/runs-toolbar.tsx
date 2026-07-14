@@ -60,7 +60,7 @@ function ModeTabs({
             aria-selected={active}
             onClick={() => onChange(tab.value)}
             className={cn(
-              "inline-flex h-full items-center px-3 text-xs font-medium transition-colors duration-[var(--duration-instant)] motion-reduce:transition-none",
+              "inline-flex h-full items-center px-3 text-xs font-medium transition-colors duration-[var(--duration-instant)]",
               active
                 ? "bg-secondary text-foreground"
                 : "text-muted-foreground hover:text-foreground"

@@ -8,9 +8,10 @@ import type { RunStatus } from "../demo-data"
  * complete — and stays muted otherwise. Queued/failed runs (no `value`) render a
  * single em dash so the column still reads as tabular.
  *
- * The width transition uses the shared slow token, so a live-updating running
- * bar sweeps like every other indicator in the app; it never runs on a hot path
- * because the fixtures are static.
+ * The fill scales via a `transform: scaleX(...)` transition on the shared slow
+ * token, so a live-updating running bar sweeps like every other indicator in
+ * the app on a GPU-composited property; it never runs on a hot path because the
+ * fixtures are static.
  */
 const FILL_TONE: Record<RunStatus, string> = {
   running: "bg-info",
@@ -46,13 +47,16 @@ export function RunProgress({
           {pct}%
         </span>
       ) : null}
-      <div className={cn("h-1 min-w-0 flex-1 bg-muted", trackClassName)} aria-hidden>
+      <div
+        className={cn("h-1 min-w-0 flex-1 overflow-hidden bg-muted", trackClassName)}
+        aria-hidden
+      >
         <span
           className={cn(
-            "block h-full transition-[width] duration-[var(--duration-slow)] ease-out-quart motion-reduce:transition-none",
+            "block h-full w-full origin-left transition-transform duration-[var(--duration-slow)] ease-out-quart",
             FILL_TONE[status]
           )}
-          style={{ width: `${pct}%` }}
+          style={{ transform: `scaleX(${pct / 100})` }}
         />
       </div>
     </div>

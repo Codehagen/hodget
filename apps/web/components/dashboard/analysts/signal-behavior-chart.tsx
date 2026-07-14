@@ -5,6 +5,7 @@ import { Bar, BarChart, Cell, ReferenceLine, XAxis, YAxis } from "recharts"
 import {
   ChartContainer,
   useChartAnimation,
+  chartAnimationProps,
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 
@@ -86,7 +87,7 @@ export function SignalBehaviorChart({
           stroke="var(--border)"
           strokeDasharray="4 4"
         />
-        <Bar dataKey="value" radius={0} isAnimationActive={isAnimationActive}>
+        <Bar dataKey="value" radius={0} isAnimationActive={isAnimationActive} {...chartAnimationProps}>
           {rows.map((row) => (
             <Cell
               key={row.tick}

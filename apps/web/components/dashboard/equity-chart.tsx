@@ -9,6 +9,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   useChartAnimation,
+  chartAnimationProps,
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 import {
@@ -117,7 +118,7 @@ export function PerformanceCard({ data }: { data: EquityPoint[] }) {
               onClick={() => setRange(r)}
               aria-pressed={range === r}
               className={cn(
-                "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)] motion-reduce:transition-none",
+                "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)]",
                 range === r
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -192,6 +193,7 @@ export function PerformanceCard({ data }: { data: EquityPoint[] }) {
               strokeDasharray="4 3"
               dot={false}
               isAnimationActive={isAnimationActive}
+              {...chartAnimationProps}
             />
             <Line
               dataKey="portfolio"
@@ -200,6 +202,7 @@ export function PerformanceCard({ data }: { data: EquityPoint[] }) {
               strokeWidth={1.75}
               dot={false}
               isAnimationActive={isAnimationActive}
+              {...chartAnimationProps}
             />
           </LineChart>
         </ChartContainer>
@@ -247,6 +250,7 @@ export function PerformanceCard({ data }: { data: EquityPoint[] }) {
               strokeWidth={1}
               fill="url(#fillDrawdown)"
               isAnimationActive={isAnimationActive}
+              {...chartAnimationProps}
             />
           </AreaChart>
         </ChartContainer>

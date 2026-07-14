@@ -61,6 +61,16 @@ function useChartAnimation(): boolean {
   return animate
 }
 
+// House animation props for Recharts series. 400ms is the --duration-page
+// tier — charts are the heaviest elements on screen, so they get the top of
+// the duration scale; "ease-out" per Design.md's enter rule (entrances
+// decelerate). Recharts takes these as JS props, not CSS, so the CSS tokens
+// can't reach them — keep these values in sync with globals.css.
+const chartAnimationProps = {
+  animationDuration: 400,
+  animationEasing: "ease-out",
+} as const
+
 function ChartContainer({
   id,
   className,
@@ -393,4 +403,5 @@ export {
   ChartLegendContent,
   ChartStyle,
   useChartAnimation,
+  chartAnimationProps,
 }

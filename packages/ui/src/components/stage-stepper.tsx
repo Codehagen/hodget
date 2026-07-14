@@ -66,7 +66,7 @@ function StageNode({
       data-slot="stage-node"
       data-state={step.state}
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full border font-mono font-medium tabular-nums",
+        "flex shrink-0 items-center justify-center rounded-full border font-mono font-medium tabular-nums transition-colors duration-[var(--duration-base)] ease-out-quad",
         NODE_SIZE[size],
         step.state === "complete" &&
           "border-success bg-success text-success-foreground",
@@ -84,8 +84,8 @@ function StageNode({
 /** Connector line whose style is decided by the node it leaves. */
 function connectorClass(leftState: StageState | undefined) {
   return leftState === "complete"
-    ? "border-success"
-    : "border-dashed border-border"
+    ? "border-success transition-colors duration-[var(--duration-base)] ease-out-quad"
+    : "border-dashed border-border transition-colors duration-[var(--duration-base)] ease-out-quad"
 }
 
 function StageLabel({
@@ -103,7 +103,7 @@ function StageLabel({
       {step.caption ? (
         <span
           className={cn(
-            "text-[11px]",
+            "text-[11px] transition-colors duration-[var(--duration-base)] ease-out-quad",
             active ? "text-info" : "text-muted-foreground"
           )}
         >

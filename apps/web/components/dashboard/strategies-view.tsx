@@ -35,6 +35,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs"
+import { TableRow } from "@workspace/ui/components/table"
 
 import {
   getStrategyDetail,
@@ -128,8 +129,9 @@ function RegistryTable({
             {rows.map((row) => {
               const selected = row.id === selectedId
               return (
-                <tr
+                <TableRow
                   key={row.id}
+                  data-state={selected ? "selected" : undefined}
                   role="button"
                   tabIndex={0}
                   aria-pressed={selected}
@@ -140,13 +142,7 @@ function RegistryTable({
                       onSelect(row.id)
                     }
                   }}
-                  data-selected={selected || undefined}
-                  className={cn(
-                    "cursor-pointer border-b border-border outline-none transition-colors duration-[var(--duration-instant)] last:border-b-0 motion-reduce:transition-none",
-                    "hover:bg-muted/60 focus-visible:bg-muted/60",
-                    selected &&
-                      "bg-primary/5 shadow-[inset_2px_0_0_0_var(--primary)] hover:bg-primary/5"
-                  )}
+                  className="cursor-pointer outline-none last:border-b-0 focus-visible:bg-muted/60 data-[state=selected]:bg-primary/5 data-[state=selected]:shadow-[inset_2px_0_0_0_var(--primary)] data-[state=selected]:hover:bg-primary/5"
                 >
                   <td className="px-4 py-3 font-mono text-sm font-medium text-foreground">
                     {row.name}
@@ -172,7 +168,7 @@ function RegistryTable({
                       className="text-sm text-foreground"
                     />
                   </td>
-                </tr>
+                </TableRow>
               )
             })}
           </tbody>

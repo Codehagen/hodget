@@ -81,7 +81,7 @@ export function AttributionCard() {
               onClick={() => setMode(m)}
               aria-pressed={mode === m}
               className={cn(
-                "px-2 py-0.5 text-[11px] font-medium transition-colors duration-[var(--duration-instant)] motion-reduce:transition-none",
+                "px-2 py-0.5 text-[11px] font-medium transition-colors duration-[var(--duration-instant)]",
                 mode === m
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -99,7 +99,12 @@ export function AttributionCard() {
             Contribution (bp)
           </span>
         </div>
-        <AttributionRows rows={rows} />
+        <div
+          key={mode}
+          className="motion-safe:animate-fade-in [animation-duration:var(--duration-fast)]"
+        >
+          <AttributionRows rows={rows} />
+        </div>
         <div className="mt-1 grid grid-cols-[minmax(6rem,1fr)_minmax(0,1.4fr)_3.25rem] items-center gap-3 border-t border-border pt-3">
           <span className="text-xs font-medium text-foreground">Total</span>
           <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">

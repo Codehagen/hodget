@@ -100,7 +100,7 @@ export function RunInspector({
   const lastEvent = lastEventFor(row)
 
   return (
-    <MasterDetailPanel className="flex flex-col gap-4">
+    <MasterDetailPanel className="flex flex-col gap-4 motion-safe:animate-fade-in">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-2">
