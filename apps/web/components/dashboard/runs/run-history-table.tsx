@@ -108,7 +108,11 @@ export function RunHistoryTable({
                 <StatusPill status={row.status} appearance="dot" />
               </TableCell>
               <TableCell className="w-36">
-                <RunProgress value={row.progressPct} status={row.status} />
+                <RunProgress
+                  value={row.progressPct}
+                  status={row.status}
+                  trackClassName="w-16 flex-none"
+                />
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {row.universe}
