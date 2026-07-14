@@ -446,6 +446,8 @@ export type StrategyLineup = { analystId: string; weight: number }
 export type Strategy = {
   id: string
   name: string
+  /** Current panel version, e.g. "v3.2.1". */
+  version: string
   description: string
   universeLabel: string
   /** Primary market identifier code for the universe. */
@@ -463,6 +465,7 @@ const STRATEGIES: Strategy[] = [
   {
     id: "earnings-drift",
     name: "Earnings drift",
+    version: "v2.4.0",
     description:
       "Post-earnings announcement drift on US large-cap technology, held through the reaction window.",
     universeLabel: "US large-cap tech",
@@ -475,6 +478,7 @@ const STRATEGIES: Strategy[] = [
   {
     id: "value-panel",
     name: "Value panel",
+    version: "v3.2.1",
     description:
       "Fundamental value with an LLM thesis review on US large-cap financials and staples.",
     universeLabel: "US large-cap value",
@@ -487,6 +491,7 @@ const STRATEGIES: Strategy[] = [
   {
     id: "momentum-carry",
     name: "Momentum carry",
+    version: "v1.8.3",
     description:
       "Cross-sectional momentum with a carry tilt across US and international large caps.",
     universeLabel: "Global large-cap",
@@ -499,6 +504,7 @@ const STRATEGIES: Strategy[] = [
   {
     id: "mean-reversion-etf",
     name: "Mean reversion ETF",
+    version: "v2.0.2",
     description:
       "Short-horizon mean reversion on liquid US sector and index ETFs, vol-scaled.",
     universeLabel: "US sector ETFs",
@@ -511,6 +517,7 @@ const STRATEGIES: Strategy[] = [
   {
     id: "ose-energy",
     name: "Oslo energy",
+    version: "v1.1.0",
     description:
       "Macro-driven long/short on Oslo Børs energy names, routed through EODHD point-in-time data.",
     universeLabel: "OSE energy",
@@ -1142,6 +1149,7 @@ export function getRunDetail(id: string): RunDetail | undefined {
       ...(STRATEGY_BY_ID[run.strategy] ?? {
         id: run.strategy,
         name: run.strategy,
+        version: "v1.0.0",
         description: "",
         universeLabel: "—",
         universeMic: "—",
@@ -1185,7 +1193,7 @@ export function getRunDetail(id: string): RunDetail | undefined {
 /* Data layer — providers, point-in-time policy, coverage            */
 /* ================================================================== */
 
-export type CoverageState = "covered" | "covered-empty" | "not-covered"
+export type CoverageState = "covered" | "covered-empty" | "not-covered" | "partial"
 
 export type Provider = {
   name: string
@@ -1267,4 +1275,932 @@ export const CORPORATE_ACTIONS: CorporateAction[] = [
   { ticker: "AAPL", mic: "XNAS", type: "split", detail: "4-for-1 forward split", exDate: "2026-06-09" },
   { ticker: "JPM", mic: "XNYS", type: "dividend", detail: "$1.40 quarterly cash dividend", exDate: "2026-07-05" },
   { ticker: "EQNR.OL", mic: "XOSL", type: "dividend", detail: "NOK 3.60 ordinary + extraordinary", exDate: "2026-06-27" },
+]
+
+/* ================================================================== */
+/* UI REFRESH v2 fixtures                                             */
+/* ================================================================== */
+
+// Shared small unions
+export type StageState = "complete" | "active" | "pending"
+export type PipelineStage = { id: string; label: string; state: StageState; caption?: string; index?: number }
+export type DecisionResult = "passed" | "clipped" | "vetoed"
+export type StrategyTag = "fundamental" | "quant" | "macro" | "event"
+export type ValueTone = "positive" | "negative" | "neutral" | "muted"
+
+// KPI strip
+export type Kpi = { label: string; value: string; delta?: { label: string; direction: "up" | "down" | "flat" }; tone?: ValueTone }
+
+export const FUND_KPIS: Kpi[] = [
+  { label: "NAV", value: "$10.42M" },
+  { label: "Day P&L", value: "+$84.2K", delta: { label: "+0.81%", direction: "up" }, tone: "positive" },
+  { label: "YTD", value: "+4.20%", tone: "positive" },
+  { label: "Gross", value: "156.3%" },
+  { label: "Net", value: "+38.6%", tone: "positive" },
+  { label: "Cash", value: "9.9%" },
+  { label: "Drawdown", value: "-4.2%", tone: "negative" },
+]
+
+export const DASHBOARD_KPIS: Kpi[] = [
+  { label: "Portfolio equity", value: "$10.42M", delta: { label: "+4.2%", direction: "up" }, tone: "positive" },
+  { label: "Net exposure", value: "+38.6%", tone: "positive" },
+  { label: "Open positions", value: "34" },
+  { label: "Risk utilization", value: "62%" },
+]
+
+// Positions & contribution (Fund monitor)
+export type PositionSide = "long" | "short" | "cash"
+export type Position = {
+  security: string
+  strategyTag: StrategyTag | null
+  side: PositionSide
+  marketValue: number
+  marketValueLabel: string
+  weightPct: number
+  dayPnl: number
+  dayPnlLabel: string
+  contributionBp: number
+  conviction: number | null
+  riskFlag: boolean
+}
+export const POSITIONS: Position[] = [
+  { security: "NVDA", strategyTag: "fundamental", side: "long", marketValue: 3_210_000, marketValueLabel: "$3.21M", weightPct: 30.8, dayPnl: 52_100, dayPnlLabel: "+$52.1K", contributionBp: 49, conviction: 0.62, riskFlag: false },
+  { security: "AAPL", strategyTag: "quant", side: "long", marketValue: 2_250_000, marketValueLabel: "$2.25M", weightPct: 21.6, dayPnl: 22_700, dayPnlLabel: "+$22.7K", contributionBp: 21, conviction: 0.28, riskFlag: true },
+  { security: "EQNR", strategyTag: "macro", side: "short", marketValue: -1_740_000, marketValueLabel: "-$1.74M", weightPct: 16.7, dayPnl: -8_300, dayPnlLabel: "-$8.3K", contributionBp: -8, conviction: -0.44, riskFlag: true },
+  { security: "DNB", strategyTag: "event", side: "long", marketValue: 1_280_000, marketValueLabel: "$1.28M", weightPct: 12.3, dayPnl: 7_600, dayPnlLabel: "+$7.6K", contributionBp: 7, conviction: 0.15, riskFlag: false },
+  { security: "MSFT", strategyTag: "fundamental", side: "long", marketValue: 1_050_000, marketValueLabel: "$1.05M", weightPct: 10.1, dayPnl: 6_300, dayPnlLabel: "+$6.3K", contributionBp: 6, conviction: 0.20, riskFlag: false },
+  { security: "CASH", strategyTag: null, side: "cash", marketValue: 1_030_000, marketValueLabel: "$1.03M", weightPct: 9.9, dayPnl: 3_800, dayPnlLabel: "+$3.8K", contributionBp: 4, conviction: null, riskFlag: false },
+]
+export const POSITIONS_TOTALS = { gross: "156.3%", net: "38.6%", dayPnl: "+$84.2K" }
+
+// Attribution
+export type AttributionRow = { key: string; label: string; bp: number }
+export const ATTRIBUTION_BY_STRATEGY: AttributionRow[] = [
+  { key: "earnings-drift", label: "earnings-drift", bp: 32 },
+  { key: "value-panel", label: "value-panel", bp: 21 },
+  { key: "momentum-carry", label: "momentum-carry", bp: -9 },
+  { key: "ose-energy", label: "ose-energy", bp: -4 },
+]
+export const ATTRIBUTION_BY_SECURITY: AttributionRow[] = [
+  { key: "NVDA", label: "NVDA", bp: 49 },
+  { key: "AAPL", label: "AAPL", bp: 21 },
+  { key: "DNB", label: "DNB", bp: 7 },
+  { key: "MSFT", label: "MSFT", bp: 6 },
+  { key: "EQNR", label: "EQNR", bp: -8 },
+]
+export const ATTRIBUTION_TOTAL_BP = 40
+
+// Risk limits (Fund monitor Risk card)
+export type RiskLimit = { metric: string; limitLabel: string; currentLabel: string; utilizationPct: number; status: "ok" | "watch" | "breach" }
+export const RISK_LIMITS: RiskLimit[] = [
+  { metric: "Position", limitLabel: "80%", currentLabel: "71%", utilizationPct: 71, status: "ok" },
+  { metric: "Gross", limitLabel: "160%", currentLabel: "98%", utilizationPct: 98, status: "ok" },
+  { metric: "Volatility (30d)", limitLabel: "80%", currentLabel: "62%", utilizationPct: 62, status: "ok" },
+  { metric: "Correlation", limitLabel: "90%", currentLabel: "86%", utilizationPct: 86, status: "watch" },
+]
+export const RISK_STRESS = { label: "Stress (Global Recession)", value: "-7.8%" }
+
+// Attention feed (Fund monitor)
+export type AttentionSeverity = "action" | "review" | "healthy"
+export type AttentionItem = { id: string; severity: AttentionSeverity; title: string; subtitle?: string; scope: string; time: string }
+export const ATTENTION_ITEMS: AttentionItem[] = [
+  { id: "att_1", severity: "action", title: "Correlation limit watch (86% / 90% limit)", subtitle: "Global tech factor", scope: "Cross-portfolio", time: "14:27" },
+  { id: "att_2", severity: "action", title: "Stale data coverage (Europe macro)", subtitle: "8 datasets > 24h", scope: "Macro", time: "13:58" },
+  { id: "att_3", severity: "review", title: "Committee decision clipped by risk", subtitle: "Position size reduced", scope: "EQNR", time: "13:21" },
+  { id: "att_4", severity: "review", title: "Committee decision clipped by risk", subtitle: "Position size reduced", scope: "AAPL", time: "12:47" },
+]
+export const ATTENTION_COUNTS = { action: 2, review: 2, healthy: 0 }
+
+// Engine operations (Fund monitor)
+export const ENGINE_OPS = {
+  lastCycle: "Completed 14:18",
+  running: 1,
+  queued: 1,
+  failed: 0,
+  activeRun: { id: "run_8c41d0", stage: "Analysts", progressPct: 68 },
+}
+
+// Recent decisions (Dashboard + Fund monitor)
+export type RecentDecision = { id: string; time: string; security: string; committeeView: string; target: string; gate: string; result: DecisionResult; note: string }
+export const RECENT_DECISIONS: RecentDecision[] = [
+  { id: "rd_1", time: "2025-05-15 14:18:07", security: "NVDA", committeeView: "Strong buy — upside to estimates; catalysts intact", target: "+2.75% (8.5% max)", gate: "Passed", result: "passed", note: "Earnings beat; AI demand inflection; backlog strength" },
+  { id: "rd_2", time: "2025-05-15 13:52:31", security: "AAPL", committeeView: "Buy — services strength offsets macro softness", target: "+1.90% (6.0% max)", gate: "Passed", result: "passed", note: "Services mix expansion; wearables recovery" },
+  { id: "rd_3", time: "2025-05-15 13:21:44", security: "EQNR", committeeView: "Hold — momentum fading; event risk ahead", target: "0.00% (4.0% max)", gate: "Clipped", result: "clipped", note: "Event risk (tax/permit); momentum rollover" },
+  { id: "rd_4", time: "2025-05-15 12:47:16", security: "DNB", committeeView: "Reduce — credit spreads widening", target: "-1.20% (3.0% max)", gate: "Passed", result: "passed", note: "Spreads widening; NIM pressure" },
+  { id: "rd_5", time: "2025-05-15 11:33:02", security: "MSFT", committeeView: "Buy — AI demand supports growth re-acceleration", target: "+2.10% (7.0% max)", gate: "Vetoed (Concentration)", result: "vetoed", note: "Concentration risk; factor crowding" },
+]
+
+// Active run (Dashboard)
+export type ActiveRunAnalyst = { name: string; type: StrategyTag; focus: string; conviction: number; status: string }
+export const ACTIVE_RUN = {
+  id: "run_8c41d0",
+  status: "running" as const,
+  strategy: "earnings-drift",
+  stages: [
+    { id: "data", label: "Data", state: "complete", caption: "Complete", index: 1 },
+    { id: "analysts", label: "Analysts", state: "active", caption: "Processing", index: 2 },
+    { id: "committee", label: "Committee", state: "pending", caption: "Pending", index: 3 },
+    { id: "risk", label: "Risk", state: "pending", caption: "Pending", index: 4 },
+    { id: "fills", label: "Fills", state: "pending", caption: "Pending", index: 5 },
+  ] as PipelineStage[],
+  analysts: [
+    { name: "Erik Lund", type: "fundamental", focus: "NVDA", conviction: 0.72, status: "Analyzing" },
+    { name: "Maria Skogli", type: "quant", focus: "AAPL", conviction: 0.35, status: "Reviewing" },
+    { name: "Jonas Bakke", type: "macro", focus: "EQNR", conviction: -0.28, status: "Analyzing" },
+    { name: "Thea Nilsen", type: "event", focus: "DNB", conviction: 0.15, status: "Gathering data" },
+  ] as ActiveRunAnalyst[],
+}
+
+// Risk snapshot + allocation (Dashboard)
+export type RiskCheck = { label: string; status: "passed" | "watch" | "failed" }
+export const RISK_SNAPSHOT = {
+  metrics: [
+    { label: "Gross exposure", value: "156.3%", tone: "neutral" as ValueTone },
+    { label: "Max position", value: "8.7%", tone: "neutral" as ValueTone },
+    { label: "Drawdown (YTD)", value: "-4.2%", tone: "negative" as ValueTone },
+    { label: "Volatility budget (30d)", value: "12.4% / 20.0%", tone: "neutral" as ValueTone },
+  ],
+  checks: [
+    { label: "Concentration (Top 5 < 40%)", status: "passed" },
+    { label: "Gross exposure (< 160%)", status: "passed" },
+    { label: "Correlation (Avg. > 0.60)", status: "watch" },
+  ] as RiskCheck[],
+}
+export type AllocationRow = { label: string; pct: number; tone?: ValueTone }
+export const ALLOCATION: AllocationRow[] = [
+  { label: "US equities", pct: 68.5 },
+  { label: "Oslo equities", pct: 21.6 },
+  { label: "Cash", pct: 9.9, tone: "muted" },
+]
+
+// Runs page — richer history + summary + inspector
+export type RunUniverse = "US Equities" | "Global Equities"
+export type RunHistoryRow = {
+  id: string
+  strategy: string
+  mode: RunMode
+  status: RunStatus
+  progressPct: number | null
+  universe: RunUniverse
+  startedAt: string
+  durationLabel: string | null
+  sharpe: number | null
+  returnPct: number | null
+}
+export const RUN_HISTORY: RunHistoryRow[] = [
+  { id: "run_8c41d0", strategy: "earnings-drift", mode: "paper", status: "running", progressPct: 68, universe: "US Equities", startedAt: "2025-05-15 14:18:07", durationLabel: "00:12:41", sharpe: 1.21, returnPct: 1.82 },
+  { id: "run_8c41cf", strategy: "value-panel", mode: "backtest", status: "completed", progressPct: 100, universe: "US Equities", startedAt: "2025-05-15 13:52:31", durationLabel: "02:43:19", sharpe: 1.37, returnPct: 6.52 },
+  { id: "run_8c41ce", strategy: "momentum-carry", mode: "backtest", status: "completed", progressPct: 100, universe: "US Equities", startedAt: "2025-05-15 13:21:44", durationLabel: "01:58:02", sharpe: 1.05, returnPct: 4.18 },
+  { id: "run_8c41cd", strategy: "mean-reversion-etf", mode: "paper", status: "queued", progressPct: null, universe: "US Equities", startedAt: "2025-05-15 13:05:12", durationLabel: null, sharpe: null, returnPct: null },
+  { id: "run_8c41cb", strategy: "momentum-carry", mode: "paper", status: "failed", progressPct: null, universe: "US Equities", startedAt: "2025-05-15 12:47:16", durationLabel: "00:03:22", sharpe: null, returnPct: null },
+  { id: "run_8c41ca", strategy: "earnings-drift", mode: "backtest", status: "completed", progressPct: 100, universe: "US Equities", startedAt: "2025-05-15 11:33:02", durationLabel: "02:10:58", sharpe: 0.98, returnPct: 3.29 },
+  { id: "run_8c41c9", strategy: "mean-reversion-etf", mode: "paper", status: "completed", progressPct: 100, universe: "US Equities", startedAt: "2025-05-15 10:15:39", durationLabel: "01:42:11", sharpe: 0.87, returnPct: 2.41 },
+  { id: "run_8c41c8", strategy: "value-panel", mode: "backtest", status: "completed", progressPct: 100, universe: "US Equities", startedAt: "2025-05-15 09:03:27", durationLabel: "01:35:44", sharpe: 0.76, returnPct: 1.63 },
+  { id: "run_8c41c7", strategy: "momentum-carry", mode: "paper", status: "failed", progressPct: null, universe: "US Equities", startedAt: "2025-05-14 18:41:10", durationLabel: "00:02:48", sharpe: null, returnPct: null },
+  { id: "run_8c41c6", strategy: "ose-energy", mode: "backtest", status: "completed", progressPct: 100, universe: "Global Equities", startedAt: "2025-05-14 16:22:05", durationLabel: "03:18:59", sharpe: 1.12, returnPct: 5.74 },
+]
+export const RUN_HISTORY_TOTAL = 48
+export const RUNS_SUMMARY = {
+  running: { count: 2, latest: { id: "run_8c41d0", strategy: "earnings-drift", progressPct: 68 } },
+  queued: { count: 1, latest: { id: "run_8c41cd", strategy: "mean-reversion-etf", note: "waiting" } },
+  failed: { count: 1, latest: { id: "run_8c41cb", strategy: "momentum-carry", note: "error" } },
+}
+export type RunInspector = {
+  id: string
+  status: RunStatus
+  strategy: string
+  mode: RunMode
+  universe: RunUniverse
+  startedAt: string
+  durationLabel: string | null
+  progressPct: number | null
+  sharpe: number | null
+  returnPct: number | null
+  stages: PipelineStage[]
+  lastEvent: { label: string; time: string }
+}
+export const RUN_INSPECTOR: RunInspector = {
+  id: "run_8c41d0",
+  status: "running",
+  strategy: "earnings-drift",
+  mode: "paper",
+  universe: "US Equities",
+  startedAt: "2025-05-15 14:18:07 UTC",
+  durationLabel: "00:12:41",
+  progressPct: 68,
+  sharpe: null,
+  returnPct: null,
+  stages: [
+    { id: "data", label: "Data", state: "complete", index: 1 },
+    { id: "analysts", label: "Analysts", state: "active", caption: "Processing", index: 2 },
+    { id: "committee", label: "Committee", state: "pending", caption: "Pending", index: 3 },
+    { id: "risk", label: "Risk", state: "pending", caption: "Pending", index: 4 },
+    { id: "fills", label: "Fills", state: "pending", caption: "Pending", index: 5 },
+  ],
+  lastEvent: { label: "Analyst model evaluation started", time: "2025-05-15 14:18:08 UTC" },
+}
+
+// Run detail (run-detail.png) — evidence, decision log, selected trace. The run
+// header, stage rail, and KPI strip are derived per-run from getRunDetail() in
+// run-detail-view.tsx, so no static header fixture lives here.
+export type RunEvidenceComponent = { component: string; version: string; verified: boolean }
+export const RUN_EVIDENCE: RunEvidenceComponent[] = [
+  { component: "Data snapshot", version: "ds_9a7e52b1", verified: true },
+  { component: "Analyst prompt", version: "prompt_v7f4a2c1", verified: true },
+  { component: "Model", version: "model_v2.14.0", verified: true },
+  { component: "Risk policy", version: "risk_v1.8.2", verified: true },
+  { component: "Execution assumptions", version: "exec_v1.5.1", verified: true },
+]
+export type DecisionLogRow = {
+  id: string
+  date: string
+  time: string
+  ticker: string
+  agreement: number[]
+  committeeView: number
+  targetWeight: number
+  riskGate: DecisionResult
+  nextSessionFill: string
+  decisionId: string
+}
+export const DECISION_LOG: DecisionLogRow[] = [
+  { id: "dl_1", date: "2025-05-15", time: "13:52:31", ticker: "NVDA", agreement: [0.82, 0.61, 0.2, -0.14], committeeView: 0.53, targetWeight: 6.00, riskGate: "clipped", nextSessionFill: "BUY 412 @ $184.20", decisionId: "dec_c12f8b7a" },
+  { id: "dl_2", date: "2025-05-15", time: "13:52:31", ticker: "AAPL", agreement: [0.6, 0.4, 0.15, -0.5], committeeView: 0.41, targetWeight: 5.50, riskGate: "passed", nextSessionFill: "BUY 286 @ $189.44", decisionId: "dec_e88a3d21" },
+  { id: "dl_3", date: "2025-05-15", time: "13:52:31", ticker: "EQNR", agreement: [0.5, 0.3, 0.1, -0.2], committeeView: 0.22, targetWeight: 4.00, riskGate: "passed", nextSessionFill: "BUY 530 @ $210.77", decisionId: "dec_6b7d1e54" },
+  { id: "dl_4", date: "2025-05-15", time: "13:52:31", ticker: "DNB", agreement: [-0.3, -0.1, 0.1, -0.2], committeeView: -0.08, targetWeight: 0.00, riskGate: "passed", nextSessionFill: "No trade", decisionId: "dec_b91e4c33" },
+  { id: "dl_5", date: "2025-05-14", time: "16:22:05", ticker: "NVDA", agreement: [0.85, 0.6, 0.3, -0.1], committeeView: 0.61, targetWeight: 8.50, riskGate: "clipped", nextSessionFill: "BUY 430 @ $178.11", decisionId: "dec_4e7f9b12" },
+  { id: "dl_6", date: "2025-05-14", time: "16:22:05", ticker: "AAPL", agreement: [0.55, 0.4, 0.2, -0.3], committeeView: 0.38, targetWeight: 5.00, riskGate: "passed", nextSessionFill: "BUY 255 @ $183.02", decisionId: "dec_2d4a6c88" },
+  { id: "dl_7", date: "2025-05-14", time: "16:22:05", ticker: "EQNR", agreement: [0.45, 0.25, 0.1, -0.2], committeeView: 0.19, targetWeight: 3.00, riskGate: "passed", nextSessionFill: "BUY 480 @ $204.33", decisionId: "dec_8c1e2b77" },
+  { id: "dl_8", date: "2025-05-14", time: "16:22:05", ticker: "DNB", agreement: [-0.4, -0.2, 0.05, -0.1], committeeView: -0.05, targetWeight: 0.00, riskGate: "passed", nextSessionFill: "No trade", decisionId: "dec_a9b0d1aa" },
+]
+export type DecisionTraceSignal = { name: string; value: number; thesis: string }
+export type DecisionTraceStage = {
+  index: number
+  title: string
+  value?: string
+  meta?: string
+  status: string
+  tone: ValueTone | "warning"
+  signals?: DecisionTraceSignal[]
+  agreement?: number[]
+  target?: string
+}
+export type DecisionTrace = {
+  id: string
+  ticker: string
+  timestamp: string
+  stages: DecisionTraceStage[]
+}
+// Per-ticker narrative for a decision trace: the three committee signal theses
+// (Value / Earnings drift / Macro) and the one-line committee summary.
+const DECISION_NOTES: Record<
+  string,
+  { signals: [string, string, string]; committee: string }
+> = {
+  NVDA: {
+    signals: [
+      "Undervalued vs peers; robust FCF and margin expansion.",
+      "Upward estimate revisions; improving guidance quality.",
+      "Rate pressure on multiples; growth slowdown risk.",
+    ],
+    committee: "Strong buy — upside to estimates; catalysts intact.",
+  },
+  AAPL: {
+    signals: [
+      "Trades near fair value with a durable services mix.",
+      "Steady positive revisions after the print.",
+      "Consumer softness is a modest headwind.",
+    ],
+    committee: "Buy — services strength offsets macro softness.",
+  },
+  EQNR: {
+    signals: [
+      "Cash returns and buyback underpin the valuation.",
+      "Positive revisions on firmer Brent.",
+      "Energy tailwind from tighter supply.",
+    ],
+    committee: "Buy — cash returns and a supportive macro backdrop.",
+  },
+  DNB: {
+    signals: [
+      "Cheap on book, but the credit cycle is turning.",
+      "Estimate revisions flat to lower.",
+      "Rate-sensitive; spreads widening.",
+    ],
+    committee: "Reduce — credit spreads widening; hold flat this cycle.",
+  },
+}
+
+function signedTrace(value: number): string {
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`
+}
+
+/** Next calendar day of an ISO date (YYYY-MM-DD), pure and deterministic. */
+function nextTradingDay(date: string): string {
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+// Derive a full decision trace from a decision-log row, so the trace body can
+// never disagree with the row's header (ticker, committee view, risk gate,
+// target weight, fill). A Clipped row shows a Clipped risk gate with matching
+// target weights; a "No trade" row shows no fill.
+function buildDecisionTrace(row: DecisionLogRow): DecisionTrace {
+  const notes = DECISION_NOTES[row.ticker] ?? {
+    signals: ["—", "—", "—"] as [string, string, string],
+    committee: "Committee view recorded.",
+  }
+  const [aValue = 0, aDrift = 0, , aMacro = 0] = row.agreement
+  const bullish = row.committeeView >= 0.15
+  const noTrade = row.nextSessionFill === "No trade"
+
+  const gate: DecisionTraceStage =
+    row.riskGate === "clipped"
+      ? {
+          index: 4,
+          title: "Risk gate",
+          value: "Clipped",
+          meta: "Concentration limit: gross exposure would exceed the single-name cap.",
+          target: `${(row.targetWeight + 2.5).toFixed(2)}% → ${row.targetWeight.toFixed(2)}%`,
+          status: "Clipped",
+          tone: "warning",
+        }
+      : noTrade
+        ? {
+            index: 4,
+            title: "Risk gate",
+            value: "No position",
+            meta: "Committee view below the entry threshold.",
+            status: "Passed",
+            tone: "muted",
+          }
+        : {
+            index: 4,
+            title: "Risk gate",
+            value: "Passed",
+            meta: "Within concentration and gross-exposure limits.",
+            target: `${row.targetWeight.toFixed(2)}%`,
+            status: "Passed",
+            tone: "positive",
+          }
+
+  const execution: DecisionTraceStage = noTrade
+    ? {
+        index: 5,
+        title: "Execution (next session)",
+        value: "No trade",
+        meta: "No order — target weight is flat.",
+        status: "No fill",
+        tone: "muted",
+      }
+    : {
+        index: 5,
+        title: "Execution (next session)",
+        value: row.nextSessionFill,
+        meta: `Next-session open (${nextTradingDay(row.date)})`,
+        status: "Executed",
+        tone: "positive",
+      }
+
+  return {
+    id: row.decisionId,
+    ticker: row.ticker,
+    timestamp: `${row.date} ${row.time} UTC`,
+    stages: [
+      {
+        index: 1,
+        title: "Data snapshot",
+        value: "ds_9a7e52b1",
+        meta: `Known-at cutoff: ${row.date} 13:50:00 UTC`,
+        status: "Verified",
+        tone: "positive",
+      },
+      {
+        index: 2,
+        title: "Analyst signals",
+        meta: "value-panel@v3.2.1",
+        status: "",
+        tone: "neutral",
+        signals: [
+          { name: "Value", value: aValue, thesis: notes.signals[0] },
+          { name: "Earnings drift", value: aDrift, thesis: notes.signals[1] },
+          { name: "Macro", value: aMacro, thesis: notes.signals[2] },
+        ],
+        agreement: row.agreement,
+      },
+      {
+        index: 3,
+        title: "Committee net view",
+        value: signedTrace(row.committeeView),
+        meta: notes.committee,
+        status: bullish ? "Approved" : "Held flat",
+        tone: bullish ? "positive" : "muted",
+      },
+      gate,
+      execution,
+    ],
+  }
+}
+
+/** Decision trace per decision id, derived from and consistent with DECISION_LOG. */
+export const DECISION_TRACES: Record<string, DecisionTrace> = Object.fromEntries(
+  DECISION_LOG.map((row) => [row.decisionId, buildDecisionTrace(row)])
+)
+
+/** The trace for a decision id, falling back to the first decision. */
+export function getDecisionTrace(decisionId: string): DecisionTrace {
+  return DECISION_TRACES[decisionId] ?? buildDecisionTrace(DECISION_LOG[0]!)
+}
+
+// Strategies page (strategies.png)
+export type StrategyReadiness = "paper-ready" | "live" | "draft" | "archived"
+export type StrategyRegistryRow = { id: string; name: string; version: string; readiness: StrategyReadiness; lastValidated: string; sharpe12m: number }
+export const STRATEGY_REGISTRY: StrategyRegistryRow[] = [
+  { id: "value-panel", name: "value-panel", version: "v3.2.1", readiness: "paper-ready", lastValidated: "2025-05-15", sharpe12m: 1.37 },
+  { id: "earnings-drift", name: "earnings-drift", version: "v2.4.0", readiness: "live", lastValidated: "2025-05-15", sharpe12m: 1.21 },
+  { id: "momentum-carry", name: "momentum-carry", version: "v1.8.3", readiness: "draft", lastValidated: "2025-05-12", sharpe12m: 0.98 },
+  { id: "ose-energy", name: "ose-energy", version: "v1.1.0", readiness: "draft", lastValidated: "2025-05-09", sharpe12m: 0.72 },
+  { id: "mean-reversion", name: "mean-reversion", version: "v2.0.2", readiness: "paper-ready", lastValidated: "2025-05-08", sharpe12m: 0.76 },
+]
+export const STRATEGY_TABS = { active: 4, draft: 2, archived: 1 }
+export type StrategyBuildStage = { stage: string; title: string; caption: string; version: string }
+export type PanelSeat = { signal: string; weight: number; notes: string }
+export type PromotionGate = { gate: string; criteria: string; status: DecisionResult | "blocked"; details: string }
+export type StrategyDetail = {
+  id: string
+  version: string
+  readiness: StrategyReadiness
+  description: string
+  stages: StrategyBuildStage[]
+  decisionSystem: {
+    panel: PanelSeat[]
+    universe: { coverage: string; markets: string; baseCurrency: string }
+    construction: { mode: string; weighting: string; rebalance: string }
+    risk: { maxPosition: string; grossExposureLimit: string; volatilityTarget: string }
+  }
+  promotionEvidence: PromotionGate[]
+  nextRequirement: string
+  versionHistory: string[]
+}
+
+/**
+ * Per-strategy detail, keyed by the registry id the Strategies page selects on.
+ * Each entry stays consistent with its STRATEGY_REGISTRY row (version, readiness,
+ * 12-month Sharpe) so the inspector body never contradicts the selected row.
+ */
+export const STRATEGY_DETAILS: Record<string, StrategyDetail> = {
+  "value-panel": {
+    id: "value-panel",
+    version: "v3.2.1",
+    readiness: "paper-ready",
+    description: "Blends valuation, earnings drift, and macro context across US and Oslo equities.",
+    stages: [
+      { stage: "Stage 1", title: "Panel", caption: "4 signals", version: "v3.2.1" },
+      { stage: "Stage 2", title: "Universe", caption: "42 securities", version: "v3.1.0" },
+      { stage: "Stage 3", title: "Construction", caption: "Long-only, weekly", version: "v2.7.0" },
+      { stage: "Stage 4", title: "Risk", caption: "Vol target 12%", version: "v2.4.0" },
+      { stage: "Stage 5", title: "Promotion", caption: "Backtest passed", version: "v1.3.0" },
+    ],
+    decisionSystem: {
+      panel: [
+        { signal: "Value LLM", weight: 0.35, notes: "Cross-sectional value score" },
+        { signal: "Earnings drift", weight: 0.40, notes: "Surprise & revisions momentum" },
+        { signal: "Quality quant", weight: 0.15, notes: "ROIC, leverage, accruals" },
+        { signal: "Macro context", weight: 0.10, notes: "Rates, growth, liquidity regime" },
+      ],
+      universe: { coverage: "42 securities", markets: "XNAS, XNYS, XOSL", baseCurrency: "USD" },
+      construction: { mode: "Long-only", weighting: "Conviction weighted", rebalance: "Weekly (Friday close)" },
+      risk: { maxPosition: "8.5%", grossExposureLimit: "160%", volatilityTarget: "12%" },
+    },
+    promotionEvidence: [
+      { gate: "Backtest", criteria: "Sharpe ≥ 0.80", status: "passed", details: "1.37" },
+      { gate: "Walk-forward", criteria: "OOS Sharpe ≥ 0.60", status: "passed", details: "0.98" },
+      { gate: "Paper observation", criteria: "Min 30 days", status: "passed", details: "43 / 60 days" },
+      { gate: "Live", criteria: "Live risk review", status: "blocked", details: "Risk review pending" },
+    ],
+    nextRequirement: "Complete live risk review to enable launch.",
+    versionHistory: ["v3.2.1", "v3.2.0", "v3.1.0", "v3.0.0"],
+  },
+  "earnings-drift": {
+    id: "earnings-drift",
+    version: "v2.4.0",
+    readiness: "live",
+    description: "Post-earnings drift on US large-cap technology, held through the reaction window.",
+    stages: [
+      { stage: "Stage 1", title: "Panel", caption: "4 signals", version: "v2.4.0" },
+      { stage: "Stage 2", title: "Universe", caption: "38 securities", version: "v2.2.0" },
+      { stage: "Stage 3", title: "Construction", caption: "Long/short, event-driven", version: "v2.1.0" },
+      { stage: "Stage 4", title: "Risk", caption: "Vol target 10%", version: "v2.0.0" },
+      { stage: "Stage 5", title: "Promotion", caption: "Live", version: "v1.6.0" },
+    ],
+    decisionSystem: {
+      panel: [
+        { signal: "Earnings drift", weight: 0.50, notes: "Standardized surprise & drift window" },
+        { signal: "Value LLM", weight: 0.25, notes: "Guards against expensive beats" },
+        { signal: "Quality quant", weight: 0.15, notes: "Accrual quality, balance-sheet strength" },
+        { signal: "Macro context", weight: 0.10, notes: "Rates & risk-appetite regime" },
+      ],
+      universe: { coverage: "38 securities", markets: "XNAS", baseCurrency: "USD" },
+      construction: { mode: "Long/short", weighting: "Surprise weighted", rebalance: "Event-driven (per print)" },
+      risk: { maxPosition: "6.0%", grossExposureLimit: "150%", volatilityTarget: "10%" },
+    },
+    promotionEvidence: [
+      { gate: "Backtest", criteria: "Sharpe ≥ 0.80", status: "passed", details: "1.21" },
+      { gate: "Walk-forward", criteria: "OOS Sharpe ≥ 0.60", status: "passed", details: "1.02" },
+      { gate: "Paper observation", criteria: "Min 30 days", status: "passed", details: "60 / 60 days" },
+      { gate: "Live", criteria: "Live risk review", status: "passed", details: "Approved 2025-05-01" },
+    ],
+    nextRequirement: "Live and trading — next walk-forward refresh due 2025-06-15.",
+    versionHistory: ["v2.4.0", "v2.3.0", "v2.2.1", "v2.1.0"],
+  },
+  "momentum-carry": {
+    id: "momentum-carry",
+    version: "v1.8.3",
+    readiness: "draft",
+    description: "Cross-sectional momentum with a carry tilt across US and international large caps.",
+    stages: [
+      { stage: "Stage 1", title: "Panel", caption: "4 signals", version: "v1.8.3" },
+      { stage: "Stage 2", title: "Universe", caption: "120 securities", version: "v1.6.0" },
+      { stage: "Stage 3", title: "Construction", caption: "Long/short, monthly", version: "v1.4.0" },
+      { stage: "Stage 4", title: "Risk", caption: "Vol target 14%", version: "v1.3.0" },
+      { stage: "Stage 5", title: "Promotion", caption: "Draft", version: "v1.0.0" },
+    ],
+    decisionSystem: {
+      panel: [
+        { signal: "Momentum", weight: 0.45, notes: "12-1 cross-sectional momentum" },
+        { signal: "Earnings drift", weight: 0.25, notes: "Revisions confirm the trend" },
+        { signal: "Macro context", weight: 0.20, notes: "Carry & risk-regime tilt" },
+        { signal: "Quality quant", weight: 0.10, notes: "Down-weights junk rallies" },
+      ],
+      universe: { coverage: "120 securities", markets: "XNAS, XNYS, XETR", baseCurrency: "USD" },
+      construction: { mode: "Long/short", weighting: "Rank weighted", rebalance: "Monthly (month-end)" },
+      risk: { maxPosition: "5.0%", grossExposureLimit: "200%", volatilityTarget: "14%" },
+    },
+    promotionEvidence: [
+      { gate: "Backtest", criteria: "Sharpe ≥ 0.80", status: "passed", details: "0.98" },
+      { gate: "Walk-forward", criteria: "OOS Sharpe ≥ 0.60", status: "passed", details: "0.71" },
+      { gate: "Paper observation", criteria: "Min 30 days", status: "blocked", details: "0 / 30 days" },
+      { gate: "Live", criteria: "Live risk review", status: "blocked", details: "Not started" },
+    ],
+    nextRequirement: "Start a 30-day paper observation before promotion.",
+    versionHistory: ["v1.8.3", "v1.8.2", "v1.8.0", "v1.7.0"],
+  },
+  "ose-energy": {
+    id: "ose-energy",
+    version: "v1.1.0",
+    readiness: "draft",
+    description: "Macro-driven long/short on Oslo Børs energy names, routed through point-in-time data.",
+    stages: [
+      { stage: "Stage 1", title: "Panel", caption: "4 signals", version: "v1.1.0" },
+      { stage: "Stage 2", title: "Universe", caption: "14 securities", version: "v1.0.2" },
+      { stage: "Stage 3", title: "Construction", caption: "Long/short, weekly", version: "v1.0.1" },
+      { stage: "Stage 4", title: "Risk", caption: "Vol target 16%", version: "v1.0.0" },
+      { stage: "Stage 5", title: "Promotion", caption: "Draft", version: "v1.0.0" },
+    ],
+    decisionSystem: {
+      panel: [
+        { signal: "Macro context", weight: 0.45, notes: "Brent term structure & gas demand" },
+        { signal: "Value LLM", weight: 0.25, notes: "Reserve-based valuation" },
+        { signal: "Earnings drift", weight: 0.20, notes: "Trading-update revisions" },
+        { signal: "Sentiment", weight: 0.10, notes: "News & filing tone" },
+      ],
+      universe: { coverage: "14 securities", markets: "XOSL", baseCurrency: "NOK" },
+      construction: { mode: "Long/short", weighting: "Conviction weighted", rebalance: "Weekly (Friday close)" },
+      risk: { maxPosition: "10.0%", grossExposureLimit: "140%", volatilityTarget: "16%" },
+    },
+    promotionEvidence: [
+      { gate: "Backtest", criteria: "Sharpe ≥ 0.80", status: "passed", details: "0.72" },
+      { gate: "Walk-forward", criteria: "OOS Sharpe ≥ 0.60", status: "blocked", details: "0.44 (below bar)" },
+      { gate: "Paper observation", criteria: "Min 30 days", status: "blocked", details: "Not started" },
+      { gate: "Live", criteria: "Live risk review", status: "blocked", details: "Not started" },
+    ],
+    nextRequirement: "Improve out-of-sample Sharpe above 0.60 to clear walk-forward.",
+    versionHistory: ["v1.1.0", "v1.0.2", "v1.0.0"],
+  },
+  "mean-reversion": {
+    id: "mean-reversion",
+    version: "v2.0.2",
+    readiness: "paper-ready",
+    description: "Short-horizon mean reversion on liquid US sector and index ETFs, vol-scaled.",
+    stages: [
+      { stage: "Stage 1", title: "Panel", caption: "4 signals", version: "v2.0.2" },
+      { stage: "Stage 2", title: "Universe", caption: "24 securities", version: "v1.9.0" },
+      { stage: "Stage 3", title: "Construction", caption: "Long/short, daily", version: "v1.8.0" },
+      { stage: "Stage 4", title: "Risk", caption: "Vol target 11%", version: "v1.7.0" },
+      { stage: "Stage 5", title: "Promotion", caption: "Backtest passed", version: "v1.2.0" },
+    ],
+    decisionSystem: {
+      panel: [
+        { signal: "Mean reversion", weight: 0.55, notes: "Band dislocation, vol-scaled" },
+        { signal: "Quality quant", weight: 0.20, notes: "Liquidity & spread filter" },
+        { signal: "Value LLM", weight: 0.15, notes: "Anchors against value trap" },
+        { signal: "Sentiment", weight: 0.10, notes: "Fades headline-driven spikes" },
+      ],
+      universe: { coverage: "24 securities", markets: "ARCX", baseCurrency: "USD" },
+      construction: { mode: "Long/short", weighting: "Inverse-vol weighted", rebalance: "Daily (close)" },
+      risk: { maxPosition: "4.0%", grossExposureLimit: "180%", volatilityTarget: "11%" },
+    },
+    promotionEvidence: [
+      { gate: "Backtest", criteria: "Sharpe ≥ 0.80", status: "passed", details: "0.76" },
+      { gate: "Walk-forward", criteria: "OOS Sharpe ≥ 0.60", status: "passed", details: "0.63" },
+      { gate: "Paper observation", criteria: "Min 30 days", status: "passed", details: "31 / 60 days" },
+      { gate: "Live", criteria: "Live risk review", status: "blocked", details: "Risk review pending" },
+    ],
+    nextRequirement: "Complete live risk review to enable launch.",
+    versionHistory: ["v2.0.2", "v2.0.1", "v2.0.0", "v1.9.0"],
+  },
+}
+
+/** The strategy detail for a registry id, falling back to the flagship panel. */
+export function getStrategyDetail(id: string): StrategyDetail {
+  return STRATEGY_DETAILS[id] ?? STRATEGY_DETAILS["value-panel"]!
+}
+
+export type ValidationHistoryRow = { run: string; period: string; snapshot: string; sharpe: number; maxDrawdown: string; gate: string; result: DecisionResult }
+
+/** Per-strategy validation history, keyed by registry id. */
+export const VALIDATION_HISTORY_BY_STRATEGY: Record<string, ValidationHistoryRow[]> = {
+  "value-panel": [
+    { run: "run_8c41cf", period: "2025-02-15 → 2025-05-15 (OOS)", snapshot: "snapshot_2025-05-15_1200", sharpe: 1.37, maxDrawdown: "-8.4%", gate: "Backtest", result: "passed" },
+    { run: "run_8c41c8", period: "2024-11-15 → 2025-02-14 (OOS)", snapshot: "snapshot_2025-02-14_1200", sharpe: 0.98, maxDrawdown: "-9.1%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41be", period: "2024-08-15 → 2024-11-14 (OOS)", snapshot: "snapshot_2024-11-14_1200", sharpe: 1.05, maxDrawdown: "-7.6%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41c3", period: "2024-05-15 → 2024-08-14 (OOS)", snapshot: "snapshot_2024-08-14_1200", sharpe: 0.87, maxDrawdown: "-10.2%", gate: "Walk-forward", result: "passed" },
+  ],
+  "earnings-drift": [
+    { run: "run_8c41ca", period: "2025-02-15 → 2025-05-15 (OOS)", snapshot: "snapshot_2025-05-15_1200", sharpe: 1.21, maxDrawdown: "-6.9%", gate: "Backtest", result: "passed" },
+    { run: "run_8c41c5", period: "2024-11-15 → 2025-02-14 (OOS)", snapshot: "snapshot_2025-02-14_1200", sharpe: 1.02, maxDrawdown: "-7.4%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41c0", period: "2024-08-15 → 2024-11-14 (OOS)", snapshot: "snapshot_2024-11-14_1200", sharpe: 0.94, maxDrawdown: "-8.1%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41bb", period: "2024-05-15 → 2024-08-14 (OOS)", snapshot: "snapshot_2024-08-14_1200", sharpe: 1.10, maxDrawdown: "-6.2%", gate: "Live", result: "passed" },
+  ],
+  "momentum-carry": [
+    { run: "run_8c41ce", period: "2025-02-15 → 2025-05-15 (OOS)", snapshot: "snapshot_2025-05-15_1200", sharpe: 0.98, maxDrawdown: "-11.3%", gate: "Backtest", result: "passed" },
+    { run: "run_8c41c2", period: "2024-11-15 → 2025-02-14 (OOS)", snapshot: "snapshot_2025-02-14_1200", sharpe: 0.71, maxDrawdown: "-13.0%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41b8", period: "2024-08-15 → 2024-11-14 (OOS)", snapshot: "snapshot_2024-11-14_1200", sharpe: 0.58, maxDrawdown: "-14.7%", gate: "Walk-forward", result: "clipped" },
+  ],
+  "ose-energy": [
+    { run: "run_8c41cc", period: "2025-02-15 → 2025-05-15 (OOS)", snapshot: "snapshot_2025-05-15_1200", sharpe: 0.72, maxDrawdown: "-12.6%", gate: "Backtest", result: "passed" },
+    { run: "run_8c41c1", period: "2024-11-15 → 2025-02-14 (OOS)", snapshot: "snapshot_2025-02-14_1200", sharpe: 0.44, maxDrawdown: "-15.9%", gate: "Walk-forward", result: "vetoed" },
+    { run: "run_8c41bc", period: "2024-08-15 → 2024-11-14 (OOS)", snapshot: "snapshot_2024-11-14_1200", sharpe: 0.61, maxDrawdown: "-13.4%", gate: "Walk-forward", result: "passed" },
+  ],
+  "mean-reversion": [
+    { run: "run_8c41c9", period: "2025-02-15 → 2025-05-15 (OOS)", snapshot: "snapshot_2025-05-15_1200", sharpe: 0.76, maxDrawdown: "-5.8%", gate: "Backtest", result: "passed" },
+    { run: "run_8c41ba", period: "2024-11-15 → 2025-02-14 (OOS)", snapshot: "snapshot_2025-02-14_1200", sharpe: 0.63, maxDrawdown: "-6.4%", gate: "Walk-forward", result: "passed" },
+    { run: "run_8c41c4", period: "2024-08-15 → 2024-11-14 (OOS)", snapshot: "snapshot_2024-11-14_1200", sharpe: 0.69, maxDrawdown: "-6.0%", gate: "Walk-forward", result: "passed" },
+  ],
+}
+
+/** The validation history for a registry id, falling back to an empty list. */
+export function getValidationHistory(id: string): ValidationHistoryRow[] {
+  return VALIDATION_HISTORY_BY_STRATEGY[id] ?? []
+}
+
+// Analysts page (analysts.png)
+export type AnalystHealth = "healthy" | "degraded"
+export type AnalystRegistryRow = { id: string; name: string; kind: AnalystKind; version: string; health: AnalystHealth; ic90d: number; abstainPct: number }
+export const ANALYST_REGISTRY: AnalystRegistryRow[] = [
+  { id: "earnings-drift", name: "Earnings drift", kind: "quant", version: "v2.4.0", health: "healthy", ic90d: 0.112, abstainPct: 6.2 },
+  { id: "value", name: "Value", kind: "llm", version: "v3.2.1", health: "healthy", ic90d: 0.083, abstainPct: 8.4 },
+  { id: "quality", name: "Quality", kind: "quant", version: "v1.6.0", health: "healthy", ic90d: 0.067, abstainPct: 5.1 },
+  { id: "macro-context", name: "Macro context", kind: "llm", version: "v2.1.0", health: "degraded", ic90d: 0.028, abstainPct: 22.3 },
+  { id: "insider-activity", name: "Insider activity", kind: "quant", version: "v1.3.2", health: "healthy", ic90d: 0.041, abstainPct: 10.7 },
+  { id: "sentiment", name: "Sentiment", kind: "llm", version: "v1.8.0", health: "healthy", ic90d: 0.055, abstainPct: 12.6 },
+]
+export const ANALYST_TABS = { active: 6, degraded: 1, abstentionRate: "8.4%", signalsThisMonth: 1_284 }
+export type OperationalHealthRow = { label: string; value: string; status: "verified" | "healthy" | "attention" }
+export type AnalystDetail = {
+  id: string
+  name: string
+  handle: string
+  version: string
+  kind: AnalystKind
+  health: AnalystHealth
+  description: string
+  io: { input: string; method: string; output: string; failure: string }
+  behavior: { ic: string; hitRate: string; avgConviction: string; coverage: string }
+  // Avg outcome (realized return, %) by conviction decile 1 (Low) .. 10 (High)
+  behaviorDeciles: number[]
+  operational: OperationalHealthRow[]
+  lastRefreshed: string
+}
+
+/**
+ * Per-analyst detail, keyed by the registry id the Analysts page selects on.
+ * Each entry stays consistent with its ANALYST_REGISTRY row (kind, version,
+ * health, 90-day IC) — a degraded analyst shows degraded operational health.
+ */
+export const ANALYST_DETAILS: Record<string, AnalystDetail> = {
+  "earnings-drift": {
+    id: "earnings-drift",
+    name: "Earnings drift",
+    handle: "quant.earnings-drift",
+    version: "v2.4.0",
+    kind: "quant",
+    health: "healthy",
+    description: "Ranks names by standardized earnings surprise and drifts into the post-announcement window.",
+    io: { input: "PIT estimates & prints", method: "Surprise z-score", output: "Conviction + drift horizon", failure: "Abstain on stale estimates" },
+    behavior: { ic: "0.112", hitRate: "60.4%", avgConviction: "0.58", coverage: "93.8%" },
+    behaviorDeciles: [-1.1, -0.8, -0.5, -0.1, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8],
+    operational: [
+      { label: "Spec version", value: "quant.earnings-drift.v2.4.0", status: "verified" },
+      { label: "Estimator", value: "surprise-zscore-v6", status: "healthy" },
+      { label: "Median latency", value: "0.21s", status: "healthy" },
+      { label: "Cost per signal", value: "$0.0002", status: "healthy" },
+      { label: "Compute success", value: "100.0%", status: "healthy" },
+      { label: "Data coverage", value: "93.8%", status: "healthy" },
+    ],
+    lastRefreshed: "2025-05-15 14:18:07 UTC",
+  },
+  value: {
+    id: "value",
+    name: "Value",
+    handle: "llm.value",
+    version: "v3.2.1",
+    kind: "llm",
+    health: "healthy",
+    description: "Forms a valuation view from point-in-time fundamentals and preserves a written thesis.",
+    io: { input: "PIT fundamentals", method: "Value checklist", output: "Conviction + thesis", failure: "Abstain, never neutral" },
+    behavior: { ic: "0.083", hitRate: "57.8%", avgConviction: "0.46", coverage: "91.6%" },
+    behaviorDeciles: [-0.9, -0.7, -0.4, 0.05, 0.2, 0.45, 0.6, 0.8, 1.0, 1.2],
+    operational: [
+      { label: "Prompt version", value: "prompt.value.v3.2.1", status: "verified" },
+      { label: "Model", value: "gpt-4o-2024-08-06", status: "healthy" },
+      { label: "Median latency", value: "1.82s", status: "healthy" },
+      { label: "Cost per signal", value: "$0.0041", status: "healthy" },
+      { label: "Parse success", value: "99.6%", status: "healthy" },
+      { label: "Data coverage", value: "92.3%", status: "attention" },
+    ],
+    lastRefreshed: "2025-05-15 14:18:07 UTC",
+  },
+  quality: {
+    id: "quality",
+    name: "Quality",
+    handle: "quant.quality",
+    version: "v1.6.0",
+    kind: "quant",
+    health: "healthy",
+    description: "Scores balance-sheet quality — ROIC, leverage, and accruals — from point-in-time fundamentals.",
+    io: { input: "PIT fundamentals", method: "Quality composite", output: "Conviction score", failure: "Abstain on missing filings" },
+    behavior: { ic: "0.067", hitRate: "55.9%", avgConviction: "0.41", coverage: "94.9%" },
+    behaviorDeciles: [-0.6, -0.4, -0.2, 0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.95],
+    operational: [
+      { label: "Spec version", value: "quant.quality.v1.6.0", status: "verified" },
+      { label: "Estimator", value: "quality-composite-v3", status: "healthy" },
+      { label: "Median latency", value: "0.18s", status: "healthy" },
+      { label: "Cost per signal", value: "$0.0002", status: "healthy" },
+      { label: "Compute success", value: "100.0%", status: "healthy" },
+      { label: "Data coverage", value: "94.9%", status: "healthy" },
+    ],
+    lastRefreshed: "2025-05-15 14:18:07 UTC",
+  },
+  "macro-context": {
+    id: "macro-context",
+    name: "Macro context",
+    handle: "llm.macro-context",
+    version: "v2.1.0",
+    kind: "llm",
+    health: "degraded",
+    description: "Synthesizes macro releases and central-bank language into a cross-asset and single-name view.",
+    io: { input: "Macro releases & speeches", method: "Regime synthesis", output: "Conviction + regime tag", failure: "Abstain on stale feeds" },
+    behavior: { ic: "0.028", hitRate: "50.7%", avgConviction: "0.52", coverage: "77.7%" },
+    behaviorDeciles: [-0.3, -0.35, -0.1, 0.05, -0.05, 0.2, 0.1, 0.3, 0.25, 0.4],
+    operational: [
+      { label: "Prompt version", value: "prompt.macro-context.v2.1.0", status: "verified" },
+      { label: "Model", value: "gpt-4o-2024-08-06", status: "healthy" },
+      { label: "Median latency", value: "3.94s", status: "attention" },
+      { label: "Cost per signal", value: "$0.0068", status: "healthy" },
+      { label: "Parse success", value: "94.1%", status: "attention" },
+      { label: "Data coverage", value: "77.7%", status: "attention" },
+    ],
+    lastRefreshed: "2025-05-15 13:58:02 UTC",
+  },
+  "insider-activity": {
+    id: "insider-activity",
+    name: "Insider activity",
+    handle: "quant.insider-activity",
+    version: "v1.3.2",
+    kind: "quant",
+    health: "healthy",
+    description: "Reads point-in-time insider filings for cluster buying and selling pressure.",
+    io: { input: "PIT insider filings", method: "Cluster & size score", output: "Conviction score", failure: "Abstain on thin filings" },
+    behavior: { ic: "0.041", hitRate: "53.4%", avgConviction: "0.38", coverage: "89.3%" },
+    behaviorDeciles: [-0.5, -0.3, -0.15, 0.0, 0.1, 0.25, 0.35, 0.5, 0.6, 0.75],
+    operational: [
+      { label: "Spec version", value: "quant.insider-activity.v1.3.2", status: "verified" },
+      { label: "Estimator", value: "insider-cluster-v2", status: "healthy" },
+      { label: "Median latency", value: "0.24s", status: "healthy" },
+      { label: "Cost per signal", value: "$0.0003", status: "healthy" },
+      { label: "Compute success", value: "99.9%", status: "healthy" },
+      { label: "Data coverage", value: "89.3%", status: "attention" },
+    ],
+    lastRefreshed: "2025-05-15 14:18:07 UTC",
+  },
+  sentiment: {
+    id: "sentiment",
+    name: "Sentiment",
+    handle: "llm.sentiment",
+    version: "v1.8.0",
+    kind: "llm",
+    health: "healthy",
+    description: "Scores news and filing tone into a short-horizon sentiment view with a written rationale.",
+    io: { input: "News & filings", method: "Tone classification", output: "Conviction + rationale", failure: "Abstain on low volume" },
+    behavior: { ic: "0.055", hitRate: "54.6%", avgConviction: "0.44", coverage: "87.4%" },
+    behaviorDeciles: [-0.7, -0.45, -0.25, -0.05, 0.1, 0.3, 0.45, 0.55, 0.7, 0.85],
+    operational: [
+      { label: "Prompt version", value: "prompt.sentiment.v1.8.0", status: "verified" },
+      { label: "Model", value: "gpt-4o-mini-2024-07-18", status: "healthy" },
+      { label: "Median latency", value: "0.96s", status: "healthy" },
+      { label: "Cost per signal", value: "$0.0009", status: "healthy" },
+      { label: "Parse success", value: "99.2%", status: "healthy" },
+      { label: "Data coverage", value: "87.4%", status: "attention" },
+    ],
+    lastRefreshed: "2025-05-15 14:18:07 UTC",
+  },
+}
+
+/** The analyst detail for a registry id, falling back to the Value analyst. */
+export function getAnalystDetail(id: string): AnalystDetail {
+  return ANALYST_DETAILS[id] ?? ANALYST_DETAILS["value"]!
+}
+export type AnalystRecentSignalRow = { time: string; security: string; asOfCutoff: string; conviction: number; horizon: string; thesis: string; outcome: string; run: string }
+export const ANALYST_RECENT_SIGNALS: AnalystRecentSignalRow[] = [
+  { time: "2025-05-15 14:12:31", security: "NVDA", asOfCutoff: "2025-05-14", conviction: 0.82, horizon: "10d", thesis: "Strong upside; GPUs supply tight, margin expansion.", outcome: "+5.6%", run: "run_8c41cf" },
+  { time: "2025-05-15 13:52:31", security: "AAPL", asOfCutoff: "2025-05-14", conviction: 0.34, horizon: "10d", thesis: "Services strength offsets macro softness.", outcome: "+1.1%", run: "run_8c41c9" },
+  { time: "2025-05-15 13:21:44", security: "EQNR", asOfCutoff: "2025-05-14", conviction: -0.28, horizon: "10d", thesis: "Hold; momentum fading; event risk ahead.", outcome: "-0.4%", run: "run_8c41c7" },
+  { time: "2025-05-15 12:47:16", security: "DNB", asOfCutoff: "2025-05-14", conviction: 0.15, horizon: "10d", thesis: "Reduce; credit spreads widening.", outcome: "-0.2%", run: "run_8c41c5" },
+  { time: "2025-05-15 11:33:02", security: "MSFT", asOfCutoff: "2025-05-14", conviction: -0.21, horizon: "10d", thesis: "AI demand supports growth re-acceleration.", outcome: "-1.0%", run: "run_8c41c1" },
+]
+export type CommitteeUsageRow = { strategy: string; weight: number; since: string; ic90d: number }
+export const COMMITTEE_USAGE: CommitteeUsageRow[] = [
+  { strategy: "value-panel", weight: 0.35, since: "2025-05-15", ic90d: 0.083 },
+  { strategy: "earnings-drift", weight: 0.20, since: "2025-05-15", ic90d: 0.071 },
+  { strategy: "momentum-carry", weight: 0.15, since: "2025-05-12", ic90d: 0.032 },
+]
+export const COMMITTEE_DISAGREEMENT = { correlation: 0.42, rating: "Good" }
+
+// Data page (data.png)
+export const DATA_KPIS = [
+  { label: "Sources healthy", value: "2/2", status: "ok" as const },
+  { label: "Coverage", value: "98.7%", status: "ok" as const },
+  { label: "Freshness", value: "14m", status: "ok" as const },
+  { label: "PIT violations", value: "0", status: "ok" as const },
+]
+export const DATA_LAST_CHECKED = "2025-05-15 14:32:18 UTC"
+export type CoverageMatrixRow = { domain: string; us: CoverageState; norway: CoverageState; historicalDepth: string; freshness: string; source: string }
+export const COVERAGE_MATRIX: CoverageMatrixRow[] = [
+  { domain: "Prices", us: "covered", norway: "covered", historicalDepth: "10y", freshness: "12m", source: "US primary" },
+  { domain: "Fundamentals", us: "covered", norway: "covered", historicalDepth: "20y", freshness: "14m", source: "US primary" },
+  { domain: "Earnings", us: "covered", norway: "covered", historicalDepth: "15y", freshness: "14m", source: "US primary" },
+  { domain: "News", us: "covered", norway: "partial", historicalDepth: "3y", freshness: "38m", source: "International primary" },
+  { domain: "Insider trades", us: "covered", norway: "partial", historicalDepth: "10y", freshness: "1h 5m", source: "US primary" },
+  { domain: "FX", us: "covered", norway: "covered", historicalDepth: "15y", freshness: "4m", source: "FX feed" },
+  { domain: "Corporate actions", us: "covered", norway: "covered", historicalDepth: "20y", freshness: "6m", source: "US primary" },
+]
+export type RoutingRow = { exchange: string; routesTo: string; status: "healthy" | "degraded"; p95Latency: string; lastSync: string }
+export const ROUTING_HEALTH: RoutingRow[] = [
+  { exchange: "XNAS", routesTo: "US primary", status: "healthy", p95Latency: "132ms", lastSync: "2025-05-15 14:27:18 UTC" },
+  { exchange: "XNYS", routesTo: "US primary", status: "healthy", p95Latency: "118ms", lastSync: "2025-05-15 14:27:05 UTC" },
+  { exchange: "XOSL", routesTo: "International primary", status: "healthy", p95Latency: "164ms", lastSync: "2025-05-15 14:26:52 UTC" },
+  { exchange: "NOKUSD", routesTo: "FX feed", status: "healthy", p95Latency: "94ms", lastSync: "2025-05-15 14:27:31 UTC" },
+]
+export const DATA_INCIDENTS = {
+  warnings: 1,
+  incidents: 0,
+  items: [{ label: "News coverage partial for XOSL", since: "2025-05-15 13:52:31 UTC" }],
+}
+export type PitFlowStep = { title: string; body: string }
+export const PIT_FLOW: PitFlowStep[] = [
+  { title: "Provider observation", body: "Raw event timestamps from sources" },
+  { title: "knownAt normalization", body: "Map to knownAt (first know time)" },
+  { title: "cutoff filter", body: "knownAt ≤ decision cutoff" },
+  { title: "immutable snapshot", body: "Append-only, content-addressed (no updates, only new snapshots)" },
+  { title: "analyst context", body: "Strategies, signals, and backtests consume snapshot" },
+]
+export const PIT_RULES = [
+  { label: "Rule", value: "knownAt ≤ decision cutoff" },
+  { label: "Date-only fallback", value: "visible next trading day" },
+  { label: "Fail-loud behavior", value: "Outage throws; genuine absence returns empty." },
+]
+export type DataSnapshotRow = { id: string; createdUtc: string; coverage: string; rows: number; hash: string; usedByRuns: number; verified: boolean }
+export const DATA_SNAPSHOTS: DataSnapshotRow[] = [
+  { id: "snapshot_2025-05-15_1200", createdUtc: "2025-05-15 12:00:00", coverage: "98.7%", rows: 842_134_512, hash: "9f4c2b7e1a3d8f9c2b6e8a3b7f1c9d2e8a46c6d7e8f9012a3b4c5d6e7f89012", usedByRuns: 12, verified: true },
+  { id: "snapshot_2025-05-15_0900", createdUtc: "2025-05-15 09:00:00", coverage: "98.6%", rows: 841_002_341, hash: "7a1b3c9d2e4f8a6b1c3d5e7f9a0b2c4d6e8f0a1b2c3d4e5f6a7b8c9d0e1f2a3b", usedByRuns: 8, verified: true },
+  { id: "snapshot_2025-05-14_1700", createdUtc: "2025-05-14 17:00:00", coverage: "98.5%", rows: 839_221_117, hash: "3c9d5e7f1a2b4c6d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d", usedByRuns: 16, verified: true },
+  { id: "snapshot_2025-05-14_1200", createdUtc: "2025-05-14 12:00:00", coverage: "98.5%", rows: 837_948_221, hash: "1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a", usedByRuns: 10, verified: true },
+  { id: "snapshot_2025-05-13_1200", createdUtc: "2025-05-13 12:00:00", coverage: "98.2%", rows: 834_556_102, hash: "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", usedByRuns: 7, verified: true },
+]
+export const DATA_SNAPSHOTS_TOTAL = 24
+export type DataQualityCheck = { check: string; status: "passed" | "drift"; lastChecked: string }
+export const DATA_QUALITY_CHECKS: DataQualityCheck[] = [
+  { check: "Filing timestamp present", status: "passed", lastChecked: "2025-05-15 14:32:18" },
+  { check: "No future-known facts", status: "passed", lastChecked: "2025-05-15 14:32:18" },
+  { check: "FX every trading day", status: "passed", lastChecked: "2025-05-15 14:32:18" },
+  { check: "Corporate actions balanced", status: "passed", lastChecked: "2025-05-15 14:32:18" },
+  { check: "Symbol routing valid", status: "passed", lastChecked: "2025-05-15 14:32:18" },
+  { check: "Historical drift", status: "drift", lastChecked: "2025-05-15 14:32:18" },
+]
+export type RetentionRow = { label: string; note: string; retention: string; license: string }
+export const DATA_RETENTION: RetentionRow[] = [
+  { label: "Public synthetic fixtures", note: "Synthetic datasets for tests and demos.", retention: "90 days", license: "Internal use only" },
+  { label: "Private source cache", note: "Normalized source data and snapshots.", retention: "7 years", license: "Internal use only" },
 ]

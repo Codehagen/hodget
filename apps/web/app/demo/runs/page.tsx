@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 
-import { ALL_RUNS } from "@/components/dashboard/demo-data"
 import { RunsView } from "@/components/dashboard/runs-view"
 
 // Public demo — fixtures only, so it prerenders statically. RunsView reads URL
@@ -8,7 +7,7 @@ import { RunsView } from "@/components/dashboard/runs-view"
 export default function DemoRunsPage() {
   return (
     <Suspense>
-      <RunsView basePath="/demo" runs={ALL_RUNS} />
+      <RunsView basePath="/demo" />
     </Suspense>
   )
 }

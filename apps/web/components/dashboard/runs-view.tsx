@@ -1,158 +1,209 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  PlusSignIcon,
+} from "@hugeicons/core-free-icons"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 
 import { cn } from "@workspace/ui/lib/utils"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import { DataTable } from "@workspace/ui/components/data-table"
+import { Button } from "@workspace/ui/components/button"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
 } from "@workspace/ui/components/empty"
+import {
+  MasterDetail,
+  MasterDetailList,
+} from "@workspace/ui/components/master-detail"
 
-import type { DemoRun, RunMode, RunStatus } from "./demo-data"
+import { RUN_HISTORY, RUN_HISTORY_TOTAL } from "./demo-data"
 import { SectionHeader } from "./primitives"
-import { runColumns } from "./runs-table"
+import { RunsSummary } from "./runs/runs-summary"
+import {
+  RunsToolbar,
+  type ModeFilter,
+  type StatusFilter,
+} from "./runs/runs-toolbar"
+import { RunHistoryTable } from "./runs/run-history-table"
+import { RunInspector } from "./runs/run-inspector"
 
-const STATUS_FILTERS = ["all", "queued", "running", "completed", "failed"] as const
-const MODE_FILTERS = ["all", "backtest", "paper"] as const
+const MODE_VALUES = ["all", "backtest", "paper"] as const
+const STATUS_VALUES = ["all", "running", "queued", "completed", "failed"] as const
 
-const STATUS_LABELS: Record<(typeof STATUS_FILTERS)[number], string> = {
-  all: "All",
-  queued: "Queued",
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-}
+/** Distinct strategy names in the run history, for the strategy filter select. */
+const STRATEGY_OPTIONS = Array.from(
+  new Set(RUN_HISTORY.map((run) => run.strategy))
+)
 
-const MODE_LABELS: Record<(typeof MODE_FILTERS)[number], string> = {
-  all: "All",
-  backtest: "Backtest",
-  paper: "Paper",
-}
+/** Static, presentational pager — the fixtures are a single page of 48 total. */
+function Pagination({ shown, total }: { shown: number; total: number }) {
+  const [page, setPage] = React.useState(1)
+  const pages = [1, 2, 3, 4, 5]
 
-/** A single segmented toggle row — house-style, rounded-none, token colors. */
-function SegmentedFilter<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-  renderLabel,
-}: {
-  label: string
-  options: readonly T[]
-  value: T
-  onChange: (next: T) => void
-  renderLabel: (option: T) => string
-}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1 border border-border bg-card p-0.5">
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onChange(option)}
-            aria-pressed={value === option}
-            className={cn(
-              "px-2.5 py-1 text-xs font-medium transition-colors duration-[var(--duration-instant)] motion-reduce:transition-none",
-              value === option
-                ? "bg-secondary text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {renderLabel(option)}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
+      <p className="text-xs text-muted-foreground">
+        Showing <span className="tabular-nums">1</span> to{" "}
+        <span className="tabular-nums">{shown}</span> of{" "}
+        <span className="tabular-nums">{total}</span> runs
+      </p>
+      <nav className="flex items-center gap-1" aria-label="Run history pages">
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={page === 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          className="inline-flex size-7 items-center justify-center border border-input text-muted-foreground transition-colors duration-[var(--duration-instant)] hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={2} />
+        </button>
+        {pages.map((p) => {
+          const active = p === page
+          return (
+            <button
+              key={p}
+              type="button"
+              aria-current={active ? "page" : undefined}
+              onClick={() => setPage(p)}
+              className={cn(
+                "inline-flex size-7 items-center justify-center font-mono text-xs tabular-nums transition-colors duration-[var(--duration-instant)]",
+                active
+                  ? "border border-input bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {p}
+            </button>
+          )
+        })}
+        <span className="px-1 text-xs text-muted-foreground">…</span>
+        <button
+          type="button"
+          aria-label="Next page"
+          onClick={() => setPage((p) => p + 1)}
+          className="inline-flex size-7 items-center justify-center border border-input text-muted-foreground transition-colors duration-[var(--duration-instant)] hover:bg-muted hover:text-foreground"
+        >
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={2} />
+        </button>
+      </nav>
     </div>
   )
 }
 
 /**
- * The full run log: URL-backed status + mode filters (nuqs), then the shared
- * runs table. Row clicks route to the run detail under the current basePath.
- * All fixture data — the same view backs /demo and /dashboard.
+ * The Runs page: a live status strip, a filterable dense run-history table, and
+ * a closable inspector that opens for the selected run. The same view backs
+ * `/demo` (public) and `/dashboard` (session-guarded) — `basePath` routes the
+ * jump links. All fixture data for now; filter + selection state is client-side
+ * and instant (no row-select animation, per Design.md's frequency rule).
  */
-export function RunsView({
-  basePath,
-  runs,
-}: {
-  basePath: string
-  runs: DemoRun[]
-}) {
-  const router = useRouter()
-
-  const [status, setStatus] = useQueryState(
-    "status",
-    parseAsStringLiteral(STATUS_FILTERS).withDefault("all")
-  )
+export function RunsView({ basePath }: { basePath: string }) {
+  const [query, setQuery] = React.useState("")
+  const [strategy, setStrategy] = React.useState("all")
   const [mode, setMode] = useQueryState(
     "mode",
-    parseAsStringLiteral(MODE_FILTERS).withDefault("all")
+    parseAsStringLiteral(MODE_VALUES).withDefault("all")
+  )
+  const [status, setStatus] = useQueryState(
+    "status",
+    parseAsStringLiteral(STATUS_VALUES).withDefault("all")
+  )
+  // Open on the live run by default, matching the mock.
+  const [selectedId, setSelectedId] = React.useState<string | null>(
+    RUN_HISTORY[0]?.id ?? null
   )
 
-  const filtered = React.useMemo(
-    () =>
-      runs.filter(
-        (run) =>
-          (status === "all" || run.status === (status as RunStatus)) &&
-          (mode === "all" || run.mode === (mode as RunMode))
-      ),
-    [runs, status, mode]
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return RUN_HISTORY.filter((run) => {
+      if (mode !== "all" && run.mode !== mode) return false
+      if (status !== "all" && run.status !== status) return false
+      if (strategy !== "all" && run.strategy !== strategy) return false
+      if (
+        q &&
+        !run.id.toLowerCase().includes(q) &&
+        !run.strategy.toLowerCase().includes(q)
+      )
+        return false
+      return true
+    })
+  }, [query, mode, status, strategy])
+
+  const selectedRow = React.useMemo(
+    () => RUN_HISTORY.find((run) => run.id === selectedId) ?? null,
+    [selectedId]
   )
+
+  function handleReset() {
+    setQuery("")
+    setStrategy("all")
+    void setMode(null)
+    void setStatus(null)
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <SectionHeader
         title="Runs"
         description="Every engine cycle — backtests and paper runs across all strategies."
+        actions={
+          <Button>
+            <HugeiconsIcon icon={PlusSignIcon} size={15} strokeWidth={2} />
+            New run
+          </Button>
+        }
       />
 
-      <Card>
-        <CardHeader className="gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle>Run log</CardTitle>
-            <span className="font-mono text-xs text-muted-foreground tabular-nums">
-              {filtered.length} of {runs.length}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <SegmentedFilter
-              label="Status"
-              options={STATUS_FILTERS}
-              value={status}
-              onChange={(next) => setStatus(next === "all" ? null : next)}
-              renderLabel={(option) => STATUS_LABELS[option]}
-            />
-            <SegmentedFilter
-              label="Mode"
-              options={MODE_FILTERS}
-              value={mode}
-              onChange={(next) => setMode(next === "all" ? null : next)}
-              renderLabel={(option) => MODE_LABELS[option]}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-hidden border border-border">
-            <DataTable
-              data={filtered}
-              columns={runColumns}
-              getRowId={(run) => run.id}
-              enableRowSelection={false}
-              onRowClick={(run) => router.push(`${basePath}/runs/${run.id}`)}
-              empty={
+      <RunsSummary basePath={basePath} />
+
+      <MasterDetail
+        className={cn(
+          "gap-6",
+          selectedRow ? "lg:grid-cols-[1fr_340px]" : "lg:grid-cols-1"
+        )}
+      >
+        <MasterDetailList>
+          <div className="flex flex-col rounded-none bg-card ring-1 ring-foreground/10">
+            <div className="border-b border-border p-3">
+              <RunsToolbar
+                query={query}
+                onQueryChange={setQuery}
+                mode={mode as ModeFilter}
+                onModeChange={(next) => setMode(next === "all" ? null : next)}
+                status={status as StatusFilter}
+                onStatusChange={(next) =>
+                  setStatus(next === "all" ? null : next)
+                }
+                strategy={strategy}
+                onStrategyChange={setStrategy}
+                strategies={STRATEGY_OPTIONS}
+                onReset={handleReset}
+              />
+            </div>
+
+            <div className="px-4 pt-4 pb-2">
+              <h2 className="font-heading text-sm font-semibold text-foreground">
+                Run history
+              </h2>
+            </div>
+
+            {filtered.length > 0 ? (
+              <>
+                <RunHistoryTable
+                  rows={filtered}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                />
+                <Pagination shown={filtered.length} total={RUN_HISTORY_TOTAL} />
+              </>
+            ) : (
+              <div className="px-4 pb-6">
                 <Empty>
                   <EmptyHeader>
                     <EmptyTitle>No matching runs</EmptyTitle>
@@ -162,11 +213,19 @@ export function RunsView({
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
-              }
-            />
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </MasterDetailList>
+
+        {selectedRow ? (
+          <RunInspector
+            row={selectedRow}
+            basePath={basePath}
+            onClose={() => setSelectedId(null)}
+          />
+        ) : null}
+      </MasterDetail>
     </div>
   )
 }

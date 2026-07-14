@@ -32,6 +32,13 @@
     --color-chart-3: var(--chart-3);
     --color-chart-2: var(--chart-2);
     --color-chart-1: var(--chart-1);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-accent-violet: var(--accent-violet);
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
@@ -159,6 +166,24 @@
     --chart-3: oklch(0.609 0.126 221.723);
     --chart-4: oklch(0.52 0.105 223.128);
     --chart-5: oklch(0.45 0.085 224.283);
+    /* Semantic status colors — P&L gains / caution / active-and-info.
+       Green + amber + blue are genuinely absent from the token set above
+       (chart-1..5 are all blue/teal hues), yet every mock encodes P&L and
+       pipeline state with them. Red reuses --destructive. Pill backgrounds
+       are derived at call sites via alpha (e.g. bg-success/10 text-success),
+       which flips correctly because the token itself flips in .dark. Values
+       are Tailwind's own palette OKLCH, tuned per mode. */
+    --success: oklch(0.627 0.194 149.214);
+    --success-foreground: oklch(0.985 0 0);
+    --warning: oklch(0.666 0.179 58.318);
+    --warning-foreground: oklch(0.985 0 0);
+    --info: oklch(0.546 0.245 262.881);
+    --info-foreground: oklch(0.985 0 0);
+    /* Highlight accent — the one non-status hue in the palette (LLM/event
+       kinds). Violet is genuinely absent from the tokens above. Pill bg/border
+       are derived at call sites via alpha (bg-accent-violet/10), same as the
+       status tokens. Tailwind violet-600 in light. */
+    --accent-violet: oklch(0.541 0.281 293.009);
     --radius: 0.625rem;
     /* Motion durations (Emil Kowalski's timing guidance). Use in CSS as
        var(--duration-base), or via Tailwind arbitrary values:
@@ -203,6 +228,15 @@
     --chart-3: oklch(0.609 0.126 221.723);
     --chart-4: oklch(0.52 0.105 223.128);
     --chart-5: oklch(0.45 0.085 224.283);
+    /* Lifted lightness/chroma for legibility on dark cards (Tailwind 500s). */
+    --success: oklch(0.723 0.219 149.579);
+    --success-foreground: oklch(0.21 0.006 285.885);
+    --warning: oklch(0.769 0.188 70.08);
+    --warning-foreground: oklch(0.21 0.006 285.885);
+    --info: oklch(0.623 0.214 259.815);
+    --info-foreground: oklch(0.985 0 0);
+    /* Desaturated + lifted for dark cards (Tailwind violet-400). */
+    --accent-violet: oklch(0.702 0.183 293.541);
     --sidebar: oklch(0.21 0.006 285.885);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
