@@ -1,0 +1,33 @@
+/*
+ * Decision-map canvas motion.
+ *
+ * Scoped under `.decision-map-canvas` so it never leaks to another React Flow
+ * instance. The values are house tokens (Design.md §2) referenced as CSS
+ * variables — `var(--animate-fade-in)`, `var(--duration-fast)`,
+ * `var(--ease-out-quad)` — so this stays inside the token system. It lives in a
+ * plain stylesheet rather than Tailwind arbitrary selectors because React
+ * Flow's classes use BEM `__` double-underscores, which Tailwind's arbitrary
+ * value parser rewrites to spaces (`_` → space), silently producing a selector
+ * that matches nothing.
+ */
+
+/* Fix 024 — active-path edges ease their stroke color on selection. Color-only,
+ * so the reduced-motion allowlist (globals.css) keeps it running by design. */
+.decision-map-canvas .react-flow__edge-path {
+  transition: stroke var(--duration-fast) var(--ease-out-quad);
+}
+
+/* Fix 025 — one-time staggered entrance. The per-node `animation-delay` and
+ * `animation-fill-mode: backwards` are set inline in layout.ts (buildNodes) so
+ * an inline longhand overrides the `animation` shorthand below. The edges layer
+ * fades with the canvas. motion-safe only: gated on prefers-reduced-motion here
+ * and flattened by the global reduced-motion layer regardless. Nodes stay
+ * mounted across selection, so this plays once and never replays. */
+@media (prefers-reduced-motion: no-preference) {
+  .decision-map-canvas .react-flow__node {
+    animation: var(--animate-fade-in);
+  }
+  .decision-map-canvas .react-flow__edges {
+    animation: var(--animate-fade-in);
+  }
+}

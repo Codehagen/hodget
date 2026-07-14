@@ -1,9 +1,15 @@
 "use client"
 
 import "@xyflow/react/dist/base.css"
+import "./decision-flow.css"
 
 import * as React from "react"
-import { ReactFlow, ReactFlowProvider, useNodesState } from "@xyflow/react"
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  useNodesState,
+  type OnSelectionChangeParams,
+} from "@xyflow/react"
 
 import type { DecisionMap } from "./data"
 import { Inspector } from "./inspector"
@@ -36,17 +42,27 @@ function Flow({ map }: { map: DecisionMap }) {
   )
   const edges = React.useMemo(() => buildEdges(map, selectedId), [map, selectedId])
 
+  // Drive the inspector from React Flow's selection, which fires for pointer
+  // AND keyboard (Enter/Space on a focused node) selection — onNodeClick alone
+  // was mouse-only. multiSelect is off, so at most one node is ever selected.
+  const handleSelectionChange = React.useCallback(
+    ({ nodes: selectedNodes }: OnSelectionChangeParams) => {
+      setSelectedId(selectedNodes[0]?.id ?? null)
+    },
+    []
+  )
+
   return (
     <div className="flex flex-col items-stretch gap-4 lg:flex-row">
       <div className="min-w-0 flex-1 rounded-none bg-card ring-1 ring-foreground/10">
         <StageHeaders />
-        <div className="h-[560px] w-full">
+        <div className="decision-map-canvas h-[640px] w-full">
           <ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
             nodeTypes={nodeTypes}
-            onNodeClick={(_, node) => setSelectedId(node.id)}
+            onSelectionChange={handleSelectionChange}
             onPaneClick={() => setSelectedId(null)}
             nodesDraggable={false}
             nodesConnectable={false}
@@ -59,7 +75,7 @@ function Flow({ map }: { map: DecisionMap }) {
             zoomOnDoubleClick={false}
             preventScrolling={false}
             fitView
-            fitViewOptions={{ padding: 0.16 }}
+            fitViewOptions={{ padding: 0.16, maxZoom: 1 }}
             minZoom={0.3}
             maxZoom={1.5}
           />

@@ -36,6 +36,23 @@ export const analystNodeId = (analystId: string) => `analyst:${analystId}`
 
 const ANALYST_ROW_H = 210
 
+/**
+ * One-time entrance stagger: nodes fade in left-to-right by stage column. The
+ * delay is carried as inline `animationDelay` on the React Flow node wrapper so
+ * it overrides the `animation` shorthand emitted by the `animate-fade-in`
+ * utility (an inline longhand beats a stylesheet shorthand); `backwards`
+ * fill-mode keeps a delayed node invisible until its turn. Purely opacity —
+ * the reduced-motion layer flattens the keyframe, and the utility is
+ * `motion-safe`-gated on the wrapper besides. See `decision-flow.tsx`.
+ */
+const STAGE_STAGGER_MS = 60
+function entranceStyle(stageIndex: number) {
+  return {
+    animationDelay: `${stageIndex * STAGE_STAGGER_MS}ms`,
+    animationFillMode: "backwards" as const,
+  }
+}
+
 export function buildNodes(map: DecisionMap): Node[] {
   const nodes: Node[] = []
 
@@ -46,6 +63,7 @@ export function buildNodes(map: DecisionMap): Node[] {
     data: { d: map.data },
     selectable: true,
     draggable: false,
+    style: entranceStyle(0),
   })
 
   map.analysts.forEach((a, i) => {
@@ -57,6 +75,7 @@ export function buildNodes(map: DecisionMap): Node[] {
       selected: a.analystId === map.primaryAnalystId,
       selectable: true,
       draggable: false,
+      style: entranceStyle(1),
     })
   })
 
@@ -67,6 +86,7 @@ export function buildNodes(map: DecisionMap): Node[] {
     data: { c: map.committee },
     selectable: true,
     draggable: false,
+    style: entranceStyle(2),
   })
 
   if (map.construction) {
@@ -77,6 +97,7 @@ export function buildNodes(map: DecisionMap): Node[] {
       data: { c: map.construction },
       selectable: true,
       draggable: false,
+      style: entranceStyle(3),
     })
   }
 
@@ -87,6 +108,7 @@ export function buildNodes(map: DecisionMap): Node[] {
     data: { r: map.risk },
     selectable: true,
     draggable: false,
+    style: entranceStyle(3),
   })
 
   if (map.execution) {
@@ -97,6 +119,7 @@ export function buildNodes(map: DecisionMap): Node[] {
       data: { e: map.execution },
       selectable: true,
       draggable: false,
+      style: entranceStyle(4),
     })
   }
 

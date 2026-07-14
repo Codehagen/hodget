@@ -26,8 +26,9 @@ import type {
  * A read-only flow node: a hairline-ringed card shell with the four edge ports
  * every node exposes (left/top targets, right/bottom sources) so the layout can
  * route edges through any side. Ports are invisible — the canvas is not
- * connectable — they only anchor the derived edges. Selection is a blue ring;
- * it is instant (no transition), matching the product's motion posture.
+ * connectable — they only anchor the derived edges. Selection is a blue ring
+ * and stays instant (no transition), matching the product's motion posture;
+ * only the unselected-node hover ring (fine pointers) eases its box-shadow.
  */
 function NodeShell({
   selected,
@@ -43,8 +44,10 @@ function NodeShell({
   return (
     <div
       className={cn(
-        "relative rounded-none bg-card text-card-foreground ring-1 ring-foreground/10",
-        selected && "ring-2 ring-info",
+        "relative cursor-pointer rounded-none bg-card text-card-foreground ring-1 ring-foreground/10",
+        selected
+          ? "ring-2 ring-info"
+          : "transition-[box-shadow] duration-[var(--duration-instant)] ease-out-quad pointer-fine:hover:ring-foreground/20",
         width,
         className
       )}

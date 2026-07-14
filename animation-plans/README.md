@@ -11,6 +11,8 @@ Audit provenance:
 - 013-021: audit of the dashboard refresh
   (`apps/web/components/dashboard` + ui primitives) at commit `2526020`
   (2026-07-14).
+- 022-026: decision-map audit (`apps/web/components/dashboard/decision-map`
+  @xyflow/react canvas) at commit `9ceb076` (2026-07-14).
 
 ## Plans
 
@@ -37,6 +39,11 @@ Audit provenance:
 | [019](019-attention-panel-focus-visible.md) | Attention panel rows get house focus-visible treatment | LOW | Accessibility | DONE |
 | [020](020-reduced-motion-posture-sweep.md) | Drop motion-reduce:transition-none from color-only transitions | LOW | Cohesion | DONE |
 | [021](021-strategies-view-shared-table-row.md) | Converge strategies-view rows onto shared TableRow | LOW | Cohesion | DONE |
+| [022](022-decision-map-node-affordance.md) | Decision-map nodes get a cursor + hover affordance | MEDIUM | Affordance | DONE |
+| [023](023-decision-map-keyboard-selection.md) | Decision-map inspector follows keyboard selection | MEDIUM | Accessibility | DONE |
+| [024](024-decision-map-edge-stroke-transition.md) | Active-path edges ease their stroke color on selection | LOW | Missed opportunity | DONE (shipped; DOM-reuse verified — not a no-op) |
+| [025](025-decision-map-staggered-entrance.md) | Decision-map one-time staggered entrance | LOW | Missed opportunity | DONE |
+| [026](026-decision-map-fitview-scale.md) | Decision-map fitView caps at 1:1 for crisp nodes | LOW | Polish | DONE |
 
 ## Recommended execution order & dependencies
 
@@ -78,6 +85,32 @@ plus a feel check against `localhost:3000/demo` (start with
 `pnpm --filter web dev`); 014 also glances at `localhost:3000/playbook`.
 Plan 015 has a documented STOP branch on the Base UI progress primitive —
 landing only the run-progress half with a report is a valid completion.
+
+### Batch 022-026 (decision-map audit)
+
+Five fixes to the read-only `@xyflow/react` decision-map canvas at
+`apps/web/components/dashboard/decision-map`, all implemented and verified
+against `/demo/runs/run_8c41cf/decisions/dec_c12f8b7a` (trade) and
+`…/dec_b91e4c33` (no-trade). They are largely independent; the only coupling is
+that **024, 025, and 026 share** the `.decision-map-canvas` scope class on the
+ReactFlow wrapper div, and **024 + 025 share** the colocated `decision-flow.css`
+stylesheet — land them together or reconcile the shared wrapper/import.
+
+1. **022** (node affordance) — `nodes.tsx` only; independent.
+2. **023** (keyboard selection) — `decision-flow.tsx` handler swap; independent.
+3. **024** (edge stroke transition) — creates `decision-flow.css` + wires the
+   import and `.decision-map-canvas` scope class.
+4. **025** (staggered entrance) — adds a `prefers-reduced-motion` block to the
+   `decision-flow.css` from 024 + per-node inline delays in `layout.ts`.
+5. **026** (fitView scale) — `decision-flow.tsx` `fitViewOptions.maxZoom` + the
+   `h-[640px]` on the same wrapper div 024/025 tag with the scope class.
+
+Batch note: the original brief proposed Tailwind arbitrary selectors on the
+wrapper for 024/025 (`[&_.react-flow__edge-path]:…`). Those do **not** compile —
+Tailwind rewrites `_` to a space, mangling React Flow's BEM `__` class names —
+so both fixes moved to a colocated `decision-flow.css` using CSS-variable
+tokens. Fix 024's DOM-reuse caveat was checked in-browser (9/9 edge paths
+reused across selection) and shipped, not reverted.
 
 Every 001-012 plan carries mechanical verification (`lint`/`build`) plus a
 feel check against `localhost:3000/playbook` (start with
