@@ -13,7 +13,7 @@ import { MarkerType, type Edge, type Node } from "@xyflow/react"
 import type { DecisionMap } from "./data"
 
 /** Horizontal stride between stage columns (px, pre-fitView). */
-const STRIDE = 340
+const STRIDE = 300
 
 const X = {
   data: 0 * STRIDE,
@@ -23,18 +23,22 @@ const X = {
   execution: 4 * STRIDE,
 }
 
-/** Five numbered stage columns, rendered as headers above the canvas. */
+/**
+ * Five numbered stage columns, rendered as question-based headers above the
+ * canvas — the plain-language spine of the explainer. The `question` leads; the
+ * `label` is the engine term underneath it.
+ */
 export const STAGES = [
-  { index: 1, label: "Point-in-time data", x: X.data },
-  { index: 2, label: "Independent views", x: X.analyst },
-  { index: 3, label: "Committee", x: X.committee },
-  { index: 4, label: "Construction + risk", x: X.constrisk },
-  { index: 5, label: "Execution", x: X.execution },
+  { index: 1, question: "What did we know?", label: "Point-in-time data", x: X.data },
+  { index: 2, question: "What did advisors think?", label: "Independent views", x: X.analyst },
+  { index: 3, question: "How were views combined?", label: "Committee", x: X.committee },
+  { index: 4, question: "What did safety change?", label: "Construction + risk", x: X.constrisk },
+  { index: 5, question: "What was executed?", label: "Fill", x: X.execution },
 ] as const
 
 export const analystNodeId = (analystId: string) => `analyst:${analystId}`
 
-const ANALYST_ROW_H = 210
+const ANALYST_ROW_H = 258
 
 /**
  * One-time entrance stagger: nodes fade in left-to-right by stage column. The
@@ -203,11 +207,11 @@ export function buildEdges(map: DecisionMap, selectedId: string | null): Edge[] 
         animated: false,
         selectable: false,
         focusable: false,
-        label: `✕ ${a.excludedReason ?? "excluded"}`,
+        label: a.excludedReason ?? "Excluded",
         labelBgPadding: [6, 3],
         labelBgBorderRadius: 0,
         labelBgStyle: { fill: "var(--muted)" },
-        labelStyle: { fill: "var(--muted-foreground)", fontSize: 11 },
+        labelStyle: { fill: "var(--info)", fontSize: 11 },
         style: { ...GREY, strokeDasharray: "5 4" },
         markerEnd: greyMarker(),
       })

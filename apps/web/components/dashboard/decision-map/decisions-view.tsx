@@ -3,198 +3,210 @@
 import "./decisions-view.css"
 
 import * as React from "react"
-import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { Calendar03Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import { parseAsString, useQueryState } from "nuqs"
 
 import { cn } from "@workspace/ui/lib/utils"
+import { Input } from "@workspace/ui/components/input"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs"
 
-import {
-  DECISION_LOG,
-  type DecisionLogRow,
-  type DecisionResult,
-} from "../demo-data"
 import { formatSignedNumber, pnlToneClass } from "../format"
-import { SectionHeader, StatusPill, type StatusName } from "../primitives"
-import { getDecisionMap } from "./data"
+import { StatusPill } from "../primitives"
+import {
+  DEFAULT_TODAY_ID,
+  getTodayDecisionMap,
+  TODAY_DECISIONS,
+  type DecisionMap,
+  type Tone,
+  type TodayRailItem,
+} from "./data"
+import { AuditTab, EvidenceTab } from "./decision-tabs"
 import { DecisionFlow } from "./decision-flow"
-
-/**
- * Every fixture decision is a view of the same value-panel committee, so we hang
- * them all off that strategy's flagship completed run. This is the run whose
- * canonical per-decision page each picker row deep-links to; it also decides the
- * map's `mode` badge (backtest). It is a real id in `ALL_RUNS`, so the per-run
- * route it points at is statically generated and never 404s.
- */
-const CANONICAL_RUN_ID = "run_8c41cf"
-
-/** The flagship decision shown by default (NVDA), matching the product mock. */
-const DEFAULT_DECISION_ID = "dec_c12f8b7a"
-
-const GATE_STATUS: Record<DecisionResult, StatusName> = {
-  passed: "passed",
-  clipped: "clipped",
-  vetoed: "vetoed",
-}
-
-const HEAD_CLASS =
-  "h-9 font-sans text-xs font-medium tracking-normal normal-case text-muted-foreground"
-const CELL_CLASS = "h-auto py-2.5 text-xs"
+import { AdvisorRail } from "./inspector"
+import { analystNodeId } from "./layout"
 
 /* ------------------------------------------------------------------ */
-/* Picker                                                              */
+/* Tone helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-type DateGroup = { date: string; rows: DecisionLogRow[] }
-
-function groupByDate(rows: readonly DecisionLogRow[]): DateGroup[] {
-  const groups: DateGroup[] = []
-  for (const row of rows) {
-    const last = groups[groups.length - 1]
-    if (last && last.date === row.date) last.rows.push(row)
-    else groups.push({ date: row.date, rows: [row] })
-  }
-  return groups
+function toneClass(tone: Tone): string {
+  return tone === "success"
+    ? "text-success"
+    : tone === "destructive"
+      ? "text-destructive"
+      : tone === "warning"
+        ? "text-warning"
+        : "text-muted-foreground"
 }
 
-function PickerRow({
-  row,
+function actionTone(actionLine: string): string {
+  if (actionLine === "No trade") return "text-muted-foreground"
+  if (actionLine.startsWith("Sold")) return "text-destructive"
+  return "text-success"
+}
+
+/* ------------------------------------------------------------------ */
+/* Left rail — today's decisions                                       */
+/* ------------------------------------------------------------------ */
+
+function RailRow({
+  item,
   selected,
   onSelect,
-  basePath,
 }: {
-  row: DecisionLogRow
+  item: TodayRailItem
   selected: boolean
   onSelect: (decisionId: string) => void
-  basePath: string
 }) {
   return (
-    <TableRow
-      data-state={selected ? "selected" : undefined}
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       aria-pressed={selected}
-      onClick={() => onSelect(row.decisionId)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault()
-          onSelect(row.decisionId)
-        }
-      }}
-      className="cursor-pointer outline-none focus-visible:bg-muted/60 data-[state=selected]:bg-primary/5"
+      onClick={() => onSelect(item.decisionId)}
+      className={cn(
+        "relative flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left outline-none",
+        "transition-colors duration-[var(--duration-instant)] focus-visible:bg-muted/60",
+        selected
+          ? "bg-primary/5 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary before:content-['']"
+          : "hover:bg-muted/40"
+      )}
     >
-      <TableCell
-        className={cn(
-          CELL_CLASS,
-          "relative pl-4 font-mono text-muted-foreground tabular-nums",
-          selected &&
-            "before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary before:content-['']"
-        )}
-      >
-        {row.time}
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, "font-mono font-medium text-foreground")}>
-        {row.ticker}
-      </TableCell>
-      <TableCell
-        className={cn(
-          CELL_CLASS,
-          "font-mono font-medium tabular-nums",
-          pnlToneClass(row.committeeView)
-        )}
-      >
-        {formatSignedNumber(row.committeeView)}
-      </TableCell>
-      <TableCell className={CELL_CLASS}>
-        <StatusPill status={GATE_STATUS[row.riskGate]} appearance="dot" />
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, "font-mono text-muted-foreground")}>
-        {row.decisionId}
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, "font-mono text-muted-foreground")}>
-        {CANONICAL_RUN_ID}
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, "w-8 pr-3 text-right")}>
-        <Link
-          href={`${basePath}/runs/${CANONICAL_RUN_ID}/decisions/${row.decisionId}`}
-          aria-label={`Open the ${row.ticker} decision map on its run page`}
-          onClick={(event) => event.stopPropagation()}
-          className="inline-flex text-muted-foreground transition-colors duration-[var(--duration-instant)] hover:text-foreground"
-        >
-          <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={2} />
-        </Link>
-      </TableCell>
-    </TableRow>
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">{item.time}</span>
+        <span className="font-heading text-sm font-semibold text-foreground">{item.ticker}</span>
+      </div>
+      <span className={cn("text-xs font-medium", actionTone(item.actionLine))}>
+        {item.actionLine}
+      </span>
+      <div className="flex items-center gap-2 text-xs">
+        <span className={cn("font-mono font-medium tabular-nums", pnlToneClass(item.view))}>
+          {formatSignedNumber(item.view)}
+        </span>
+        <span className={cn("font-medium", toneClass(item.gateTone))}>{item.gateWord}</span>
+      </div>
+      <span className="font-mono text-[11px] text-muted-foreground">{item.runId}</span>
+    </button>
   )
 }
 
-function DecisionPicker({
+function LeftRail({
+  items,
   selectedId,
   onSelect,
-  basePath,
 }: {
+  items: TodayRailItem[]
   selectedId: string
   onSelect: (decisionId: string) => void
-  basePath: string
 }) {
-  const groups = React.useMemo(() => groupByDate(DECISION_LOG), [])
-
   return (
-    <div className="flex flex-col rounded-none bg-card ring-1 ring-foreground/10">
-      <div className="flex items-baseline justify-between px-4 pt-4 pb-2">
-        <h2 className="font-heading text-sm font-semibold text-foreground">
-          All decisions
-        </h2>
-        <span className="font-mono text-xs text-muted-foreground tabular-nums">
-          {DECISION_LOG.length}
+    <div className="w-full shrink-0 rounded-none bg-card ring-1 ring-foreground/10 lg:w-52">
+      <div className="flex items-baseline justify-between px-4 pt-4 pb-2.5">
+        <span className="font-heading text-xs font-semibold tracking-wide text-foreground uppercase">
+          Today
+        </span>
+        <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+          {items.length} decisions
         </span>
       </div>
+      <div className="flex flex-col">
+        {items.length === 0 ? (
+          <p className="px-4 py-6 text-xs text-muted-foreground">No decisions match.</p>
+        ) : (
+          items.map((item) => (
+            <RailRow
+              key={item.decisionId}
+              item={item}
+              selected={item.decisionId === selectedId}
+              onSelect={onSelect}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
 
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className={cn(HEAD_CLASS, "pl-4")}>Time (UTC)</TableHead>
-            <TableHead className={HEAD_CLASS}>Ticker</TableHead>
-            <TableHead className={HEAD_CLASS}>Committee view</TableHead>
-            <TableHead className={HEAD_CLASS}>Risk gate</TableHead>
-            <TableHead className={HEAD_CLASS}>Decision ID</TableHead>
-            <TableHead className={HEAD_CLASS}>Run</TableHead>
-            <TableHead className={cn(HEAD_CLASS, "w-8")} />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {groups.map((group) => (
-            <React.Fragment key={group.date}>
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={7}
-                  className="h-auto bg-muted/30 py-1.5 pl-4 font-mono text-[11px] text-muted-foreground tabular-nums"
-                >
-                  {group.date}
-                </TableCell>
-              </TableRow>
-              {group.rows.map((row) => (
-                <PickerRow
-                  key={row.id}
-                  row={row}
-                  selected={row.decisionId === selectedId}
-                  onSelect={onSelect}
-                  basePath={basePath}
-                />
-              ))}
-            </React.Fragment>
-          ))}
-        </TableBody>
-      </Table>
+/* ------------------------------------------------------------------ */
+/* Header card + KPI strip                                             */
+/* ------------------------------------------------------------------ */
+
+function KpiCell({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] tracking-wide text-muted-foreground uppercase">{label}</span>
+      <span className={cn("font-mono text-lg font-semibold tabular-nums", className)}>{value}</span>
+    </div>
+  )
+}
+
+function HeaderCard({ map }: { map: DecisionMap }) {
+  const { kpis } = map
+  const approvedClass =
+    kpis.approvedPct == null
+      ? "text-muted-foreground"
+      : kpis.approvedPct > 0
+        ? "text-success"
+        : map.risk.result === "vetoed"
+          ? "text-destructive"
+          : "text-muted-foreground"
+
+  return (
+    <div className="flex flex-col gap-4 rounded-none bg-card p-5 ring-1 ring-foreground/10">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-2">
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {map.ticker} · {map.time}
+          </span>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+            {map.headline}
+          </h1>
+          <p className="max-w-2xl text-sm/relaxed text-muted-foreground">{map.explainer}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <StatusPill status={map.mode} />
+          {map.executed ? <StatusPill status="executed" /> : null}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
+        <KpiCell
+          label="Combined view"
+          value={formatSignedNumber(kpis.combinedView)}
+          className={pnlToneClass(kpis.combinedView)}
+        />
+        <KpiCell
+          label="Proposed"
+          value={kpis.proposedPct == null ? "—" : `${kpis.proposedPct.toFixed(2)}%`}
+          className="text-foreground"
+        />
+        <KpiCell
+          label="Approved"
+          value={kpis.approvedPct == null ? "—" : `${kpis.approvedPct.toFixed(2)}%`}
+          className={approvedClass}
+        />
+        <KpiCell label="Status" value={kpis.statusLabel} className={toneClass(kpis.statusTone)} />
+      </div>
     </div>
   )
 }
@@ -203,12 +215,24 @@ function DecisionPicker({
 /* View                                                                */
 /* ------------------------------------------------------------------ */
 
+type OutcomeFilter = "all" | "Passed" | "Reduced" | "Vetoed"
+
+const OUTCOME_LABELS: Record<OutcomeFilter, string> = {
+  all: "All outcomes",
+  Passed: "Passed",
+  Reduced: "Reduced",
+  Vetoed: "Vetoed",
+}
+
 /**
- * The top-level Decisions page: the decision map for the selected decision, with
- * a dense picker table below to swap between every committee decision. Selection
- * lives in the URL (`?d=dec_…`) via nuqs, so any decision is deep-linkable. The
- * same view backs `/demo` (public) and `/dashboard` (session-guarded) —
- * `basePath` routes the per-run deep links. Fixtures only, so it prerenders.
+ * The Decisions page — a plain-language explainer for what the fund decided,
+ * why, and what safety rules changed. The left rail lists today's decisions; the
+ * main column carries a headline card + KPIs and the tabbed explanation (the
+ * question-led decision map); the right rail explains the selected advisor.
+ *
+ * Selection lives in the URL (`?d=dec_…`) via nuqs, so any decision is
+ * deep-linkable. The same view backs `/demo` (public) and `/dashboard`
+ * (session-guarded). Fixtures only, so it prerenders.
  *
  * Swapping decisions remounts the map (React Flow only reads its initial nodes),
  * which would replay the entrance stagger on every click. Per Design.md's
@@ -216,47 +240,149 @@ function DecisionPicker({
  * the stagger on first mount only and suppress it on every later swap — tracked
  * by `suppressEntrance`, surfaced as `data-entrance` for decisions-view.css.
  */
-export function DecisionsView({ basePath }: { basePath: string }) {
+export function DecisionsView(_props: { basePath: string }) {
   const [decisionId, setDecisionId] = useQueryState(
     "d",
-    parseAsString.withDefault(DEFAULT_DECISION_ID)
+    parseAsString.withDefault(DEFAULT_TODAY_ID)
   )
+  const [search, setSearch] = React.useState("")
+  const [outcome, setOutcome] = React.useState<OutcomeFilter>("all")
 
   // Fall back to the flagship decision if the URL carries an unknown id.
-  const map =
-    getDecisionMap(decisionId, CANONICAL_RUN_ID) ??
-    getDecisionMap(DEFAULT_DECISION_ID, CANONICAL_RUN_ID)!
+  const map = getTodayDecisionMap(decisionId) ?? getTodayDecisionMap(DEFAULT_TODAY_ID)!
 
-  // Suppress the entrance stagger from the first swap onward. Adjusting state
-  // during render (the "derive from a changing prop" pattern) flips this before
-  // the swapped, remounted map ever commits, so the animation never starts —
-  // and the initial on-load entrance still plays.
+  const items = React.useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return TODAY_DECISIONS.filter((item) => {
+      const matchesSearch =
+        q === "" ||
+        item.ticker.toLowerCase().includes(q) ||
+        item.decisionId.toLowerCase().includes(q)
+      const matchesOutcome = outcome === "all" || item.gateWord === outcome
+      return matchesSearch && matchesOutcome
+    })
+  }, [search, outcome])
+
+  // Selection state, shared by the canvas and the advisor rail. Suppress the
+  // entrance stagger from the first swap onward, and reset selection to the new
+  // lead advisor — both derived during render (the "derive from a changing prop"
+  // pattern) so they settle before the remounted map ever commits.
   const [suppressEntrance, setSuppressEntrance] = React.useState(false)
+  const [selectedId, setSelectedId] = React.useState<string | null>(
+    analystNodeId(map.primaryAnalystId)
+  )
+  const [railAdvisorId, setRailAdvisorId] = React.useState(map.primaryAnalystId)
   const renderedIdRef = React.useRef(map.id)
   if (renderedIdRef.current !== map.id) {
     renderedIdRef.current = map.id
     if (!suppressEntrance) setSuppressEntrance(true)
+    setSelectedId(analystNodeId(map.primaryAnalystId))
+    setRailAdvisorId(map.primaryAnalystId)
   }
 
-  return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <SectionHeader
-        title="Decisions"
-        description="Every committee decision, mapped end to end."
-      />
+  const handleSelectedIdChange = React.useCallback(
+    (id: string | null) => {
+      setSelectedId(id)
+      const advisor = map.analysts.find((a) => analystNodeId(a.analystId) === id)
+      if (advisor) setRailAdvisorId(advisor.analystId)
+    },
+    [map]
+  )
 
-      <div
-        className="decisions-map"
-        data-entrance={suppressEntrance ? "off" : "on"}
-      >
-        <DecisionFlow key={map.id} map={map} />
+  const railAdvisor =
+    map.analysts.find((a) => a.analystId === railAdvisorId) ??
+    map.analysts.find((a) => a.analystId === map.primaryAnalystId)!
+
+  return (
+    <div className="flex flex-1 flex-col gap-5 p-4 md:p-6">
+      {/* Page header + controls */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-xl font-bold tracking-tight text-foreground">Decisions</h1>
+          <p className="text-sm text-muted-foreground">
+            Understand what the fund decided, why, and what safety rules changed.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              size={14}
+              className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search ticker or decision…"
+              aria-label="Search ticker or decision"
+              className="h-8 w-full pl-8 sm:w-56"
+            />
+          </div>
+          <Select value="today" onValueChange={() => {}}>
+            <SelectTrigger aria-label="Date" className="w-fit">
+              <HugeiconsIcon icon={Calendar03Icon} size={14} className="text-muted-foreground" />
+              <SelectValue>{() => "Today"}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={outcome} onValueChange={(next) => setOutcome(next as OutcomeFilter)}>
+            <SelectTrigger aria-label="Filter by outcome" className="w-fit">
+              <SelectValue>{(value) => OUTCOME_LABELS[value as OutcomeFilter]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All outcomes</SelectItem>
+              <SelectItem value="Passed">Passed</SelectItem>
+              <SelectItem value="Reduced">Reduced</SelectItem>
+              <SelectItem value="Vetoed">Vetoed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <DecisionPicker
-        selectedId={map.id}
-        onSelect={(next) => void setDecisionId(next)}
-        basePath={basePath}
-      />
+      {/* Three columns: rail · explainer · advisor */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <LeftRail items={items} selectedId={map.id} onSelect={(next) => void setDecisionId(next)} />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <HeaderCard map={map} />
+
+          <Tabs defaultValue="explanation">
+            <TabsList variant="line">
+              <TabsTrigger value="explanation">Explanation</TabsTrigger>
+              <TabsTrigger value="evidence">Evidence</TabsTrigger>
+              <TabsTrigger value="audit">Audit &amp; replay</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="explanation" keepMounted className="pt-4">
+              <div className="decisions-map" data-entrance={suppressEntrance ? "off" : "on"}>
+                <DecisionFlow
+                  key={map.id}
+                  map={map}
+                  selectedId={selectedId}
+                  onSelectedIdChange={handleSelectedIdChange}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="evidence" className="pt-4">
+              <EvidenceTab map={map} />
+            </TabsContent>
+
+            <TabsContent value="audit" className="pt-4">
+              <AuditTab map={map} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <AdvisorRail map={map} advisor={railAdvisor} />
+      </div>
+
+      <p className="pt-2 text-center text-xs text-muted-foreground">
+        Views are opinions. Deterministic code sizes positions, applies safety limits, and records
+        fills.
+      </p>
     </div>
   )
 }

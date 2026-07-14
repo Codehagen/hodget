@@ -1,22 +1,22 @@
 "use client"
 
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Cancel01Icon,
-  CheckmarkCircle02Icon,
-  File01Icon,
-} from "@hugeicons/core-free-icons"
+import { CheckmarkCircle02Icon, File01Icon } from "@hugeicons/core-free-icons"
 
 import { cn } from "@workspace/ui/lib/utils"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@workspace/ui/components/accordion"
 
 import { formatSignedNumber, pnlToneClass } from "../format"
-import { StatusPill } from "../primitives"
 import { CopyButton } from "../run-detail/copy-button"
-import { analystNodeId } from "./layout"
-import type { DecisionMap } from "./data"
+import type { AnalystViewNodeData, DecisionMap } from "./data"
 
-function InspectorRow({
+function ProvenanceRow({
   label,
   value,
   copy,
@@ -27,7 +27,7 @@ function InspectorRow({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1.5 font-mono text-xs text-foreground">
         {value}
         {copy ? <CopyButton value={copy} /> : null}
@@ -36,132 +36,71 @@ function InspectorRow({
   )
 }
 
-/** Presentational, per-node inspector — populated from the derived map. */
-export function Inspector({
-  map,
-  selectedId,
-  onClose,
+/**
+ * The right rail — "Why did {advisor} say {conviction}?". It tracks whichever
+ * advisor node is selected on the canvas (default: the lead view), showing the
+ * evidence that advisor used and, in a collapsible provenance section, the
+ * context / prompt / model that produced the view. Presentational — everything
+ * comes from the derived map. Selecting is instant, so the rail swaps without
+ * motion.
+ */
+export function AdvisorRail({
+  advisor,
 }: {
   map: DecisionMap
-  selectedId: string | null
-  onClose: () => void
+  advisor: AnalystViewNodeData
 }) {
-  const analyst = map.analysts.find((a) => analystNodeId(a.analystId) === selectedId)
-
-  let title = "Overview"
-  let body: React.ReactNode
-
-  if (analyst) {
-    title = analyst.name
-    body = (
-      <>
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground">
-            Why{" "}
-            <span className={cn("font-mono font-medium tabular-nums", pnlToneClass(analyst.conviction))}>
-              {formatSignedNumber(analyst.conviction)}
-            </span>
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-foreground">Top contributing evidence</span>
-          <ul className="flex flex-col gap-2">
-            {analyst.evidence.map((ev) => (
-              <li key={ev.title} className="flex items-start gap-2 border border-border bg-muted/30 p-2">
-                <HugeiconsIcon icon={File01Icon} size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-xs/relaxed text-foreground">{ev.title}</span>
-                  <span className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground tabular-nums">
-                    <span>{ev.time}</span>
-                    <span className="text-muted-foreground/60">·</span>
-                    <span>{ev.source}</span>
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 border-t border-border pt-3">
-          <InspectorRow label="Rendered context" value={analyst.renderedContext} copy={analyst.renderedContext} />
-          <InspectorRow label="Prompt" value={analyst.prompt} copy={analyst.prompt !== "—" ? analyst.prompt : undefined} />
-          <InspectorRow label="Model" value={analyst.model} copy={analyst.model} />
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Parse verified</span>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
-              {analyst.parseVerified ? "Yes" : "No"}
-            </span>
-          </div>
-        </div>
-      </>
-    )
-  } else if (selectedId === "committee") {
-    title = "Committee"
-    body = (
-      <div className="flex flex-col gap-3">
-        <InspectorRow label="Net view" value={
-          <span className={pnlToneClass(map.committee.netView)}>{formatSignedNumber(map.committee.netView)}</span>
-        } />
-        <InspectorRow label="Dominant horizon" value={map.committee.dominantHorizon} />
-        <InspectorRow label="Method" value={<span className="font-sans">{map.committee.method}</span>} />
-      </div>
-    )
-  } else if (selectedId === "risk") {
-    title = "Risk gate"
-    body = (
-      <div className="flex flex-col gap-3">
-        <StatusPill status={map.risk.result} className="uppercase" />
-        <InspectorRow label="Reason" value={<span className="font-sans">{map.risk.reason}</span>} />
-        {map.risk.result === "clipped" ? (
-          <InspectorRow label="Transformation" value={`${map.risk.fromPct.toFixed(2)}% → ${map.risk.toPct.toFixed(2)}%`} />
-        ) : null}
-      </div>
-    )
-  } else if (selectedId === "construction" && map.construction) {
-    title = "Construction"
-    body = (
-      <div className="flex flex-col gap-3">
-        <InspectorRow label="Proposed target" value={`${map.construction.proposedTargetPct.toFixed(2)}%`} />
-        <InspectorRow label="Position size" value={`${map.construction.side} ${map.construction.size}`} />
-      </div>
-    )
-  } else if (selectedId === "execution" && map.execution) {
-    title = "Execution"
-    body = (
-      <div className="flex flex-col gap-3">
-        <StatusPill status="executed" label={map.execution.status} className="uppercase" />
-        <InspectorRow label="Order" value={`${map.execution.side} ${map.execution.qty} @ $${map.execution.price.toFixed(2)}`} />
-        <InspectorRow label="Timeline" value={map.execution.timeline} />
-        <InspectorRow label="Ledger ID" value={map.execution.ledgerId} copy={map.execution.ledgerId} />
-      </div>
-    )
-  } else {
-    title = map.data.ticker
-    body = (
-      <div className="flex flex-col gap-3">
-        <InspectorRow label="Cutoff" value={map.data.cutoff} />
-        <InspectorRow label="State" value={<span className="text-success">{map.data.state}</span>} />
-      </div>
-    )
-  }
-
   return (
-    <aside className="flex w-full flex-col gap-4 rounded-none bg-card p-4 text-card-foreground ring-1 ring-foreground/10 lg:w-80">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] tracking-wide text-muted-foreground uppercase">Selected</span>
-          <span className="font-heading text-sm font-medium text-foreground">{title}</span>
-        </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Clear selection" onClick={onClose}>
-          <HugeiconsIcon icon={Cancel01Icon} />
-        </Button>
+    <aside className="flex w-full shrink-0 flex-col gap-5 rounded-none bg-card p-4 text-card-foreground ring-1 ring-foreground/10 lg:w-72">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-heading text-base font-semibold text-foreground">
+          Why did {advisor.name} say{" "}
+          <span className={cn("font-mono tabular-nums", pnlToneClass(advisor.conviction))}>
+            {formatSignedNumber(advisor.conviction)}
+          </span>
+          ?
+        </h2>
+        <span className="text-xs text-muted-foreground">Top evidence used by this advisor</span>
       </div>
 
-      <div className="flex flex-col gap-4">{body}</div>
+      <ul className="flex flex-col gap-2">
+        {advisor.evidence.map((ev) => (
+          <li key={ev.title} className="flex items-start gap-2 border border-border bg-muted/30 p-2.5">
+            <HugeiconsIcon icon={File01Icon} size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-xs/relaxed text-foreground">{ev.title}</span>
+              <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{ev.time}</span>
+              <span className="text-[10px] text-muted-foreground">{ev.source}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
 
-      <Button variant="outline" size="sm" className="mt-1 w-full">
+      <Accordion className="w-full border-t border-border" defaultValue={["provenance"]}>
+        <AccordionItem value="provenance" className="border-b-0">
+          <AccordionTrigger className="hover:no-underline">Technical provenance</AccordionTrigger>
+          <AccordionContent>
+            <div className="flex flex-col gap-3 pt-1">
+              <ProvenanceRow label="Context" value={advisor.renderedContext} copy={advisor.renderedContext} />
+              <ProvenanceRow
+                label="Prompt"
+                value={advisor.prompt}
+                copy={advisor.prompt !== "—" ? advisor.prompt : undefined}
+              />
+              <ProvenanceRow label="Model" value={advisor.model} copy={advisor.model} />
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">Parse verified</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
+                  {advisor.parseVerified ? "Yes" : "No"}
+                </span>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Button variant="outline" size="sm" className="w-full">
         Open full evidence
       </Button>
     </aside>

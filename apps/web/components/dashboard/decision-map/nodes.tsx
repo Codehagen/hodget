@@ -3,12 +3,17 @@
 import * as React from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowRight01Icon,
+  CheckmarkCircle02Icon,
+  MinusSignCircleIcon,
+} from "@hugeicons/core-free-icons"
 
 import { cn } from "@workspace/ui/lib/utils"
 
 import { formatSignedNumber, pnlToneClass } from "../format"
 import { ConvictionBar, StatusPill } from "../primitives"
+import { CopyButton } from "../run-detail/copy-button"
 import type {
   AnalystViewNodeData,
   CommitteeNodeData,
@@ -22,6 +27,8 @@ import type {
 /* Shared node shell                                                   */
 /* ------------------------------------------------------------------ */
 
+type Accent = "amber" | "green"
+
 /**
  * A read-only flow node: a hairline-ringed card shell with the four edge ports
  * every node exposes (left/top targets, right/bottom sources) so the layout can
@@ -29,25 +36,39 @@ import type {
  * connectable — they only anchor the derived edges. Selection is a blue ring
  * and stays instant (no transition), matching the product's motion posture;
  * only the unselected-node hover ring (fine pointers) eases its box-shadow.
+ *
+ * `accent` gives a node a persistent semantic ring — amber for the safety gate,
+ * green for the fill — which the blue selection ring wins over when selected.
  */
 function NodeShell({
   selected,
+  accent,
   width = "w-56",
   className,
   children,
 }: {
   selected?: boolean
+  accent?: Accent
   width?: string
   className?: string
   children: React.ReactNode
 }) {
+  const accentRing =
+    accent === "amber"
+      ? "ring-warning/50"
+      : accent === "green"
+        ? "ring-success/45"
+        : "ring-foreground/10"
   return (
     <div
       className={cn(
-        "relative cursor-pointer rounded-none bg-card text-card-foreground ring-1 ring-foreground/10",
+        "relative cursor-pointer rounded-none bg-card text-card-foreground ring-1",
         selected
           ? "ring-2 ring-info"
-          : "transition-[box-shadow] duration-[var(--duration-instant)] ease-out-quad pointer-fine:hover:ring-foreground/20",
+          : cn(
+              accentRing,
+              "transition-[box-shadow] duration-[var(--duration-instant)] ease-out-quad pointer-fine:hover:ring-foreground/25"
+            ),
         width,
         className
       )}
@@ -61,34 +82,11 @@ function NodeShell({
   )
 }
 
-function NodeHeader({
-  title,
-  children,
-}: {
-  title: React.ReactNode
-  children?: React.ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1.5">
-      <span className="font-heading text-sm font-medium text-foreground">{title}</span>
-      {children}
-    </div>
-  )
-}
-
-/** A small caption above a value — the field label vocabulary used throughout. */
+/** A small muted caption above a value. */
 function FieldLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span className={cn("text-[10px] tracking-wide text-muted-foreground uppercase", className)}>
       {children}
-    </span>
-  )
-}
-
-function CodeBadge() {
-  return (
-    <span className="inline-flex h-4 items-center rounded-none border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-      code
     </span>
   )
 }
@@ -104,49 +102,50 @@ function ConvictionAxis() {
   )
 }
 
-function Verified({ label }: { label: string }) {
+/** A small outlined tag, e.g. "Deterministic rule". */
+function OutlineTag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
-      {label}
+    <span className="inline-flex h-5 w-fit items-center rounded-none border border-border bg-transparent px-1.5 text-[10px] font-medium text-muted-foreground">
+      {children}
     </span>
   )
 }
 
-function signalDot(value: number): string {
-  return value > 0.15 ? "bg-success" : value < -0.15 ? "bg-destructive" : "bg-muted-foreground"
+function fmtPct(value: number): string {
+  return `${value.toFixed(2)}%`
 }
 
 /* ------------------------------------------------------------------ */
-/* 1 · Point-in-time data                                              */
+/* 1 · What did we know? (Point-in-time data)                          */
 /* ------------------------------------------------------------------ */
 
 export function DataSourceNode({ data, selected }: NodeProps) {
   const d = (data as { d: DataSourceNodeData }).d
   return (
-    <NodeShell selected={selected} width="w-52">
-      <NodeHeader title={d.ticker} />
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
+    <NodeShell selected={selected} width="w-48">
+      <div className="flex flex-col gap-3 px-3 py-3">
         <div className="flex flex-col gap-0.5">
-          <FieldLabel>Cutoff</FieldLabel>
-          <span className="font-mono text-xs text-foreground tabular-nums">{d.cutoff}</span>
+          <span className="font-heading text-sm font-medium text-foreground">
+            {d.ticker} evidence available
+          </span>
+          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+            Known at {d.knownAt}
+          </span>
         </div>
-        <div className="flex flex-col gap-1">
-          <FieldLabel>Sources</FieldLabel>
+        <div className="flex flex-col gap-2">
           {d.sources.map((s) => (
-            <span key={s.label} className="flex items-center gap-1.5 text-xs text-foreground">
+            <div key={s.label} className="flex items-start gap-2">
               <HugeiconsIcon
                 icon={CheckmarkCircle02Icon}
-                size={13}
-                className={s.ok ? "text-success" : "text-muted-foreground"}
+                size={14}
+                className={cn("mt-px shrink-0", s.ok ? "text-success" : "text-muted-foreground")}
               />
-              {s.label}
-            </span>
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs text-foreground">{s.label}</span>
+                <span className="text-[11px] text-success">Verified</span>
+              </div>
+            </div>
           ))}
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <FieldLabel>State</FieldLabel>
-          <Verified label={d.state} />
         </div>
       </div>
     </NodeShell>
@@ -154,47 +153,39 @@ export function DataSourceNode({ data, selected }: NodeProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2 · Independent analyst view                                        */
+/* 2 · What did advisors think? (Independent views)                    */
 /* ------------------------------------------------------------------ */
 
 export function AnalystNode({ data, selected }: NodeProps) {
   const a = (data as { a: AnalystViewNodeData }).a
   return (
-    <NodeShell selected={selected} width="w-60" className={cn(!a.included && "opacity-90")}>
-      <NodeHeader
-        title={
-          <span className="flex items-center gap-2">
-            {a.name}
-            <StatusPill status={a.kind} />
+    <NodeShell selected={selected} width="w-56">
+      <div className="flex flex-col gap-2.5 px-3 py-2.5">
+        <span className="flex items-center gap-2">
+          <span className="font-heading text-sm font-medium text-foreground">{a.name}</span>
+          <StatusPill status={a.kind} />
+        </span>
+
+        <div className="flex items-start justify-between gap-2">
+          <span className={cn("font-mono text-lg font-semibold tabular-nums", pnlToneClass(a.conviction))}>
+            {formatSignedNumber(a.conviction)}{" "}
+            <span className="text-sm font-medium text-foreground">{a.word}</span>
           </span>
-        }
-      >
-        <span className="font-mono text-[11px] text-muted-foreground">{a.version}</span>
-      </NodeHeader>
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <FieldLabel>Conviction</FieldLabel>
-            <span className={cn("font-mono text-base font-semibold tabular-nums", pnlToneClass(a.conviction))}>
-              {formatSignedNumber(a.conviction)}
-            </span>
-          </div>
-          <div className="flex flex-col items-end gap-0.5">
-            <FieldLabel>Horizon</FieldLabel>
-            <span className="font-mono text-xs text-foreground tabular-nums">{a.horizonDays}d</span>
-          </div>
+          <span className="mt-1 shrink-0 text-[11px] text-muted-foreground">{a.horizonDays}-day view</span>
         </div>
+
         <div className="flex flex-col gap-1">
           <ConvictionBar value={a.conviction} showValue={false} segments={20} />
           <ConvictionAxis />
         </div>
-        <div className="flex flex-col gap-0.5">
-          <FieldLabel>Thesis</FieldLabel>
-          <p className="text-xs/relaxed text-foreground">{a.thesis}</p>
-        </div>
-        <div className="flex items-center justify-between border-t border-border pt-2">
-          <FieldLabel>Analyst weight</FieldLabel>
-          <span className="font-mono text-xs text-foreground tabular-nums">{a.weight.toFixed(2)}</span>
+
+        <p className="text-xs/relaxed text-foreground">{a.thesis}</p>
+
+        <div className="flex items-center gap-1.5 border-t border-border pt-2 text-[11px] text-muted-foreground">
+          <span>Weight</span>
+          <span className="font-mono text-foreground tabular-nums">{a.weight.toFixed(2)}</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className={cn(!a.included && "text-info")}>{a.usedLabel}</span>
         </div>
       </div>
     </NodeShell>
@@ -202,106 +193,82 @@ export function AnalystNode({ data, selected }: NodeProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 3 · Committee                                                       */
+/* 3 · How were views combined? (Committee)                            */
 /* ------------------------------------------------------------------ */
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0
-  return values.reduce((s, v) => s + v, 0) / values.length
-}
 
 export function CommitteeNode({ data, selected }: NodeProps) {
   const c = (data as { c: CommitteeNodeData }).c
   return (
-    <NodeShell selected={selected} width="w-64">
-      <NodeHeader title="Conviction committee" />
-      <div className="flex flex-col gap-3 px-3 pt-1 pb-3">
-        <div className="flex items-center justify-between">
-          <FieldLabel>Dominant horizon</FieldLabel>
-          <span className="font-mono text-xs text-foreground tabular-nums">{c.dominantHorizon}</span>
+    <NodeShell selected={selected} width="w-72">
+      <div className="flex flex-col gap-3 px-3.5 py-3">
+        <div className="flex flex-col gap-1">
+          <span className="font-heading text-sm font-medium text-foreground">{c.resultLabel}</span>
+          <span className={cn("font-mono text-2xl font-semibold tabular-nums", pnlToneClass(c.netView))}>
+            {formatSignedNumber(c.netView)}
+          </span>
+          <p className="text-xs/relaxed text-foreground">{c.sentence}</p>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>Included contributors ({c.included.length})</FieldLabel>
+        <div className="flex flex-col gap-1.5 border-t border-border pt-2.5">
           {c.included.map((m) => (
             <div key={m.name} className="flex items-center gap-2 text-xs">
-              <span className={cn("size-1.5 shrink-0 rounded-full", signalDot(m.conviction))} />
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="shrink-0 text-success" />
               <span className="min-w-0 flex-1 truncate text-foreground">{m.name}</span>
-              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                {m.weight.toFixed(2)}
+              <span className={cn("font-mono text-[11px] font-medium tabular-nums", pnlToneClass(m.conviction))}>
+                {formatSignedNumber(m.conviction)}
               </span>
-              <span className={cn("w-10 text-right font-mono text-[11px] font-medium tabular-nums", pnlToneClass(m.conviction))}>
+            </div>
+          ))}
+          {c.excluded.map((m) => (
+            <div key={m.name} className="flex items-center gap-2 text-xs">
+              <HugeiconsIcon icon={MinusSignCircleIcon} size={13} className="shrink-0 text-destructive" />
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                {m.name} <span className="text-muted-foreground/70">(dissent)</span>
+              </span>
+              <span className={cn("font-mono text-[11px] font-medium tabular-nums", pnlToneClass(m.conviction))}>
                 {formatSignedNumber(m.conviction)}
               </span>
             </div>
           ))}
         </div>
 
-        {c.excluded.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel>Excluded ({c.excluded.length})</FieldLabel>
-            {c.excluded.map((m) => (
-              <div key={m.name} className="flex items-center gap-2 text-xs">
-                <span className="size-1.5 shrink-0 rounded-full bg-destructive" />
-                <span className="min-w-0 flex-1 truncate text-foreground">{m.name}</span>
-                <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{m.horizon}</span>
-                <span className={cn("w-10 text-right font-mono text-[11px] font-medium tabular-nums", pnlToneClass(m.conviction))}>
-                  {formatSignedNumber(m.conviction)}
-                </span>
-              </div>
-            ))}
-          </div>
+        {c.dissentNote ? (
+          <p className="text-[11px]/relaxed text-muted-foreground">{c.dissentNote}</p>
         ) : null}
 
-        <div className="flex flex-col gap-0.5 border-t border-border pt-2">
-          <FieldLabel>Net view</FieldLabel>
-          <span className={cn("font-mono text-lg font-semibold tabular-nums", pnlToneClass(c.netView))}>
-            {formatSignedNumber(c.netView)}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-t border-border pt-2.5 text-[11px] text-muted-foreground">
+          <span>
+            Net view{" "}
+            <span className={cn("font-mono font-medium tabular-nums", pnlToneClass(c.netView))}>
+              {formatSignedNumber(c.netView)}
+            </span>
           </span>
-          <span className="text-[10px] text-muted-foreground">{c.method}</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className="tabular-nums">Weights sum to {c.sumWeights.toFixed(2)}</span>
         </div>
-
-        <div className="flex flex-col gap-1">
-          <FieldLabel>Agreement (included views)</FieldLabel>
-          <ConvictionBar value={mean(c.agreement)} showValue={false} segments={20} />
-          <ConvictionAxis />
-        </div>
-        {c.dissent.length > 0 ? (
-          <div className="flex flex-col gap-1">
-            <FieldLabel>Dissent (excluded)</FieldLabel>
-            <ConvictionBar value={mean(c.dissent)} showValue={false} segments={20} />
-            <ConvictionAxis />
-          </div>
-        ) : null}
       </div>
     </NodeShell>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* 4 · Construction + risk gate                                        */
+/* 4 · What did safety change? (Construction + risk gate)              */
 /* ------------------------------------------------------------------ */
 
 export function ConstructionNode({ data, selected }: NodeProps) {
   const c = (data as { c: ConstructionNodeData }).c
   return (
-    <NodeShell selected={selected} width="w-52">
-      <NodeHeader title="Construction">
-        <CodeBadge />
-      </NodeHeader>
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
+    <NodeShell selected={selected} width="w-48">
+      <div className="flex flex-col gap-2.5 px-3 py-3">
         <div className="flex flex-col gap-0.5">
-          <FieldLabel>Proposed target</FieldLabel>
-          <span className="font-mono text-lg font-semibold text-foreground tabular-nums">
-            {c.proposedTargetPct.toFixed(2)}%
+          <FieldLabel>Proposed position</FieldLabel>
+          <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
+            {fmtPct(c.proposedTargetPct)}
           </span>
         </div>
-        <div className="flex flex-col gap-0.5">
-          <FieldLabel>Position size</FieldLabel>
-          <span className={cn("font-mono text-sm font-medium tabular-nums", c.side === "BUY" ? "text-success" : "text-destructive")}>
-            {c.side} {c.size}
-          </span>
-        </div>
+        <span className={cn("font-mono text-sm font-medium tabular-nums", c.side === "BUY" ? "text-success" : "text-destructive")}>
+          {c.side} {c.size}
+        </span>
       </div>
     </NodeShell>
   )
@@ -310,66 +277,64 @@ export function ConstructionNode({ data, selected }: NodeProps) {
 export function RiskGateNode({ data, selected }: NodeProps) {
   const r = (data as { r: RiskGateNodeData }).r
   const clipped = r.result === "clipped"
+  const vetoed = r.result === "vetoed"
+  const accent: Accent | undefined = vetoed ? undefined : clipped ? "amber" : undefined
   return (
-    <NodeShell selected={selected} width="w-52">
-      <NodeHeader title="Risk gate">
-        <CodeBadge />
-      </NodeHeader>
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
-        <StatusPill status={r.result} className="uppercase" />
+    <NodeShell selected={selected} accent={accent} width="w-52" className={cn(vetoed && !selected && "ring-destructive/50")}>
+      <div className="flex flex-col gap-2.5 px-3.5 py-3">
+        <span className="font-heading text-sm font-medium text-foreground">{r.headline}</span>
+
+        {clipped || vetoed ? (
+          <span className="flex items-baseline gap-1.5 font-mono text-lg font-semibold tabular-nums">
+            <span className="text-muted-foreground line-through">{fmtPct(r.fromPct)}</span>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={14} className="self-center text-muted-foreground" />
+            <span className="text-foreground">{fmtPct(r.toPct)}</span>
+          </span>
+        ) : null}
+
+        {r.approvedSize > 0 ? (
+          <span className={cn("font-mono text-sm font-medium tabular-nums", r.approvedSide === "BUY" ? "text-success" : "text-destructive")}>
+            {r.approvedSide} {r.approvedSize}
+          </span>
+        ) : vetoed ? (
+          <span className="font-mono text-sm font-medium text-destructive tabular-nums">No fill</span>
+        ) : null}
+
         <div className="flex flex-col gap-0.5">
           <FieldLabel>Reason</FieldLabel>
           <span className="text-xs text-foreground">{r.reason}</span>
         </div>
-        {clipped ? (
-          <div className="flex flex-col gap-0.5">
-            <FieldLabel>Transformation</FieldLabel>
-            <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
-              <span className="text-muted-foreground line-through">{r.fromPct.toFixed(2)}%</span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={12} className="text-muted-foreground" />
-              <span className="font-medium text-foreground">{r.toPct.toFixed(2)}%</span>
-            </span>
-          </div>
-        ) : null}
-        {r.approvedSize > 0 ? (
-          <div className="flex flex-col gap-0.5">
-            <FieldLabel>Approved size</FieldLabel>
-            <span className={cn("font-mono text-sm font-medium tabular-nums", r.approvedSide === "BUY" ? "text-success" : "text-destructive")}>
-              {r.approvedSide} {r.approvedSize}
-            </span>
-          </div>
-        ) : null}
+
+        <OutlineTag>Deterministic rule</OutlineTag>
       </div>
     </NodeShell>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* 5 · Execution                                                       */
+/* 5 · What was executed? (Fill)                                       */
 /* ------------------------------------------------------------------ */
 
 export function ExecutionNode({ data, selected }: NodeProps) {
   const e = (data as { e: ExecutionNodeData }).e
   return (
-    <NodeShell selected={selected} width="w-52">
-      <NodeHeader title="Execution">
-        <CodeBadge />
-      </NodeHeader>
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
-        <StatusPill status={e.filled ? "executed" : "queued"} label={e.status} className="uppercase" />
-        <div className="flex flex-col gap-0.5">
-          <FieldLabel>Order</FieldLabel>
-          <span className={cn("font-mono text-sm font-medium tabular-nums", e.side === "BUY" ? "text-success" : "text-destructive")}>
-            {e.side} {e.qty} @ ${e.price.toFixed(2)}
-          </span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <FieldLabel>Timeline</FieldLabel>
-          <span className="font-mono text-xs text-foreground tabular-nums">{e.timeline}</span>
-        </div>
+    <NodeShell selected={selected} accent="green" width="w-52">
+      <div className="flex flex-col gap-2.5 px-3.5 py-3">
+        <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+          Filled next session
+        </span>
+        <span className={cn("font-mono text-base font-semibold tabular-nums", e.side === "BUY" ? "text-success" : "text-destructive")}>
+          {e.side} {e.qty} @ ${e.price.toFixed(2)}
+        </span>
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">{e.timeline}</span>
+        <span className="text-[11px] text-muted-foreground">Recorded in immutable ledger</span>
         <div className="flex flex-col gap-0.5 border-t border-border pt-2">
           <FieldLabel>Ledger ID</FieldLabel>
-          <span className="font-mono text-xs text-muted-foreground">{e.ledgerId}</span>
+          <span className="flex items-center gap-1 font-mono text-xs text-foreground">
+            {e.ledgerId}
+            <CopyButton value={e.ledgerId} />
+          </span>
         </div>
       </div>
     </NodeShell>
