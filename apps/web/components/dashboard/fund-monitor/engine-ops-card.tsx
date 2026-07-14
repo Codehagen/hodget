@@ -18,7 +18,7 @@ function StepBox({ step }: { step: FunnelStep }) {
       <span className="font-mono text-sm font-semibold text-foreground tabular-nums">
         {step.value}
       </span>
-      <span className="text-[10px]/tight text-muted-foreground text-balance">
+      <span className="text-[10px]/tight text-balance text-muted-foreground">
         {step.label}
       </span>
     </div>
@@ -57,7 +57,7 @@ export function EngineOpsCard({ basePath }: { basePath: string }) {
         <div className="flex justify-end">
           <Link
             href={`${basePath}/decisions`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:text-primary/80 hover:underline"
           >
             Open Decisions
             <HugeiconsIcon icon={ArrowRight01Icon} size={14} />

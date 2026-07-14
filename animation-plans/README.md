@@ -13,6 +13,8 @@ Audit provenance:
   (2026-07-14).
 - 022-026: decision-map audit (`apps/web/components/dashboard/decision-map`
   @xyflow/react canvas) at commit `9ceb076` (2026-07-14).
+- 027-032: audit of the plain-language explainer rebuilds — Fund overview,
+  Decisions, and Strategies dashboard pages — at commit `1752933` (2026-07-14).
 
 ## Plans
 
@@ -44,6 +46,12 @@ Audit provenance:
 | [024](024-decision-map-edge-stroke-transition.md) | Active-path edges ease their stroke color on selection | LOW | Missed opportunity | DONE (shipped; DOM-reuse verified — not a no-op) |
 | [025](025-decision-map-staggered-entrance.md) | Decision-map one-time staggered entrance | LOW | Missed opportunity | DONE |
 | [026](026-decision-map-fitview-scale.md) | Decision-map fitView caps at 1:1 for crisp nodes | LOW | Polish | DONE |
+| [027](027-equity-chart-range-morph.md) | Fund-overview chart stops replaying its draw tween on range clicks | MEDIUM | Frequency | DONE |
+| [028](028-fund-overview-micro-affordances.md) | Fund-overview micro-affordances (dead transitions, focus-visible, chevron curve) | LOW | Affordance | DONE |
+| [029](029-risk-budget-meter-sweep.md) | Risk-budget meter sweeps once on mount (scaleX) | MEDIUM | Missed opportunity | DONE |
+| [030](030-decision-node-accent-hover.md) | Decision-map node hover preserves semantic accent rings | MEDIUM | Affordance | DONE |
+| [031](031-decisions-polish.md) | Decisions polish (canvas legibility kept, rail snap, advisor crossfade) | LOW | Polish | DONE (031a kept-as-is: canvas is width-bound at 1440px) |
+| [032](032-strategies-version-history-buttons.md) | Strategies version-history inline buttons get sibling hover | LOW | Cohesion | DONE |
 
 ## Recommended execution order & dependencies
 
@@ -117,3 +125,51 @@ feel check against `localhost:3000/playbook` (start with
 `pnpm --filter web dev`). Plans with decision branches (006, 007, 008, 012)
 allow a documented "keep as-is" outcome — that is a valid completion, not a
 failure.
+
+### Batch 027-032 (explainer-rebuild audit)
+
+Six fixes across the plain-language explainer rebuilds of three dashboard pages —
+**Fund overview** (`/demo`), **Decisions** (`/demo/decisions`), and **Strategies**
+(`/demo/strategies`) — all implemented and verified in headless Chromium against
+`/demo`, `/demo/decisions`, and `/demo/strategies`, both themes, zero app console
+errors. Mostly independent; the couplings:
+
+1. **027** (chart range morph) and **028b** (range-button focus-visible) edit the
+   **same `<button>`** in `equity-chart.tsx` (027 the `onClick`, 028 the class) —
+   land together or reconcile.
+2. **029** (risk-budget sweep) adds a `risk-sweep` keyframe + `--animate-risk-sweep`
+   token to `packages/ui/src/styles/globals.css`, consumed by `risk-card.tsx`.
+3. **030** (node accent hover) is `nodes.tsx`-only; independent.
+4. **031** touches `decisions-view.tsx` (rail snap) and `inspector.tsx` (advisor
+   crossfade); **031a** (canvas height) is a documented **keep-as-is** — measurement
+   showed the map is width-bound at 1440px, so raising height/padding does not
+   improve legibility (reconciling the plan-026 `h-640` regression: the restyle's
+   `h-480`/`padding 0.08` is the better-balanced choice at desktop widths).
+5. **032** is `strategies-view.tsx`-only; independent.
+
+Batch note — two implementation adjustments from the brief's literal form, both
+because the literal form did not win the CSS cascade:
+
+- **031c** advisor crossfade: `motion-safe:animate-fade-in` +
+  `[animation-duration:var(--duration-fast)]` did not override — the
+  `animate-fade-in` token's `animation` shorthand resets `animation-duration` back
+  to `--duration-base` (measured 0.2s). Replaced with one explicit shorthand
+  reusing the same keyframe:
+  `motion-safe:[animation:fade-in_var(--duration-fast)_var(--ease-out-quart)]`
+  (verified 0.15s). Same visual result, no override conflict.
+- **029** risk sweep: used a CSS keyframe (not a transition-from-zero) because
+  `risk-card.tsx` is a server component with no mount hook; a keyframe runs once
+  on mount and never replays on re-render.
+
+Rejected (not implemented, by design):
+
+- **Adding explicit `ease` to the `transition-colors` hover idiom** — would drift
+  from the established repo-wide hover idiom (applies to 028a, 032, and every
+  sibling link). Kept the bare `transition-colors duration-[var(--duration-instant)]`.
+- **Advisor weight-bar sweep on Strategies** — the bar remounts per selection, so
+  a sweep would replay on a frequent interaction (frequency rule, Design.md §1/§4).
+- **Refresh-button spin on Fund overview** — the button is a no-op mock; spinning
+  it would imply work that isn't happening.
+- **Recent-decisions expanded-detail fade** — restraint; the instant expand is the
+  settled behavior (Design.md frequency rule, already noted in the card's doc
+  comment).

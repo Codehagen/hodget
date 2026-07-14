@@ -2,7 +2,6 @@ import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
-import { cn } from "@workspace/ui/lib/utils"
 import {
   Card,
   CardContent,
@@ -13,7 +12,9 @@ import {
 import { FORWARD_RISK, type RiskScenario } from "../demo-data"
 import { formatSignedPercent } from "../format"
 
-const MAX_LOSS = Math.max(...FORWARD_RISK.scenarios.map((s) => Math.abs(s.loss)))
+const MAX_LOSS = Math.max(
+  ...FORWARD_RISK.scenarios.map((s) => Math.abs(s.loss))
+)
 
 function ScenarioRow({ scenario }: { scenario: RiskScenario }) {
   const width = (Math.abs(scenario.loss) / MAX_LOSS) * 100
@@ -40,7 +41,8 @@ function ScenarioRow({ scenario }: { scenario: RiskScenario }) {
  * the "Explore risk" link correct on both /dashboard and /demo.
  */
 export function RiskCard({ basePath }: { basePath: string }) {
-  const { largestRisk, riskBudgetPct, riskBudgetLabel, scenarios } = FORWARD_RISK
+  const { largestRisk, riskBudgetPct, riskBudgetLabel, scenarios } =
+    FORWARD_RISK
   return (
     <Card>
       <CardHeader className="pb-0">
@@ -68,8 +70,8 @@ export function RiskCard({ basePath }: { basePath: string }) {
               aria-label="Risk budget used"
             >
               <span
-                className={cn("block h-full", "bg-success")}
-                style={{ width: `${riskBudgetPct}%` }}
+                className="block h-full w-full origin-left bg-success motion-safe:animate-risk-sweep"
+                style={{ transform: `scaleX(${riskBudgetPct / 100})` }}
               />
             </div>
             <div className="flex justify-between font-mono text-[10px] text-muted-foreground tabular-nums">
@@ -93,7 +95,7 @@ export function RiskCard({ basePath }: { basePath: string }) {
         <div className="flex justify-end">
           <Link
             href={`${basePath}/strategies`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:text-primary/80 hover:underline"
           >
             Explore risk
             <HugeiconsIcon icon={ArrowRight01Icon} size={14} />

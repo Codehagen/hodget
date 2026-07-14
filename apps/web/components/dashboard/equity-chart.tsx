@@ -1,7 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from "recharts"
 
 import { cn } from "@workspace/ui/lib/utils"
 import {
@@ -74,8 +82,14 @@ function buildSeries(curve: EquityPoint[]): PerfPoint[] {
 }
 
 const perfConfig = {
-  portfolio: { label: PERFORMANCE_LEGEND.portfolio.label, color: "var(--foreground)" },
-  benchmark: { label: PERFORMANCE_LEGEND.benchmark.label, color: "var(--muted-foreground)" },
+  portfolio: {
+    label: PERFORMANCE_LEGEND.portfolio.label,
+    color: "var(--foreground)",
+  },
+  benchmark: {
+    label: PERFORMANCE_LEGEND.benchmark.label,
+    color: "var(--muted-foreground)",
+  },
 } satisfies ChartConfig
 
 const usdCompact = new Intl.NumberFormat("en-US", {
@@ -93,6 +107,11 @@ const usdFull = new Intl.NumberFormat("en-US", {
 export function PerformanceChart({ data }: { data: EquityPoint[] }) {
   const isAnimationActive = useChartAnimation()
   const [range, setRange] = React.useState<Range>("YTD")
+  // Recharts replays its 400ms update tween on every data change. The mount
+  // draw is welcome once; re-running it across series with different point
+  // counts on every range click is an incoherent morph on a frequent
+  // interaction. Keep the first draw, then go static after the first click.
+  const [hasInteracted, setHasInteracted] = React.useState(false)
 
   const full = React.useMemo(() => buildSeries(data), [data])
   const series = React.useMemo(() => {
@@ -100,7 +119,12 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
     return n == null ? full : full.slice(-n)
   }, [full, range])
 
-  const animKey = isAnimationActive ? "animated" : "static"
+  // Effective animation flag drives BOTH the series `isAnimationActive` and the
+  // container remount `key` together (chart contract, Design.md §7): when the
+  // flag flips on first interaction the container remounts static so the range
+  // change snaps instead of stranding a half-drawn tween.
+  const animate = isAnimationActive && !hasInteracted
+  const animKey = animate ? "animated" : "static"
 
   return (
     <div className="flex flex-col gap-2">
@@ -110,10 +134,13 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
           <button
             key={r}
             type="button"
-            onClick={() => setRange(r)}
+            onClick={() => {
+              setRange(r)
+              setHasInteracted(true)
+            }}
             aria-pressed={range === r}
             className={cn(
-              "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)]",
+              "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)] outline-none focus-visible:bg-muted/60",
               range === r
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -129,7 +156,7 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
         <span className="flex items-center gap-1.5">
           <span className="h-0.5 w-4 bg-foreground" aria-hidden />
           {PERFORMANCE_LEGEND.portfolio.label}
-          <span className="font-mono font-medium tabular-nums text-success">
+          <span className="font-mono font-medium text-success tabular-nums">
             {PERFORMANCE_LEGEND.portfolio.return}
           </span>
         </span>
@@ -139,7 +166,7 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
             aria-hidden
           />
           {PERFORMANCE_LEGEND.benchmark.label}
-          <span className="font-mono font-medium tabular-nums text-success">
+          <span className="font-mono font-medium text-success tabular-nums">
             {PERFORMANCE_LEGEND.benchmark.return}
           </span>
         </span>
@@ -175,7 +202,8 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
                 formatter={(value, name) => (
                   <div className="flex w-full items-center justify-between gap-3">
                     <span className="text-muted-foreground">
-                      {perfConfig[name as keyof typeof perfConfig]?.label ?? name}
+                      {perfConfig[name as keyof typeof perfConfig]?.label ??
+                        name}
                     </span>
                     <span className="font-mono font-medium text-foreground tabular-nums">
                       {usdFull.format(Number(value))}
@@ -192,7 +220,7 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
             strokeWidth={1.25}
             strokeDasharray="4 3"
             dot={false}
-            isAnimationActive={isAnimationActive}
+            isAnimationActive={animate}
             {...chartAnimationProps}
           />
           <Line
@@ -201,7 +229,7 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
             stroke="var(--color-portfolio)"
             strokeWidth={1.75}
             dot={false}
-            isAnimationActive={isAnimationActive}
+            isAnimationActive={animate}
             {...chartAnimationProps}
           />
         </LineChart>
@@ -210,14 +238,24 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
       <div className="text-[11px] text-muted-foreground">Drawdown</div>
       <ChartContainer
         key={`dd-${animKey}`}
-        config={{ drawdown: { label: "Drawdown", color: "var(--destructive)" } }}
+        config={{
+          drawdown: { label: "Drawdown", color: "var(--destructive)" },
+        }}
         className="aspect-auto h-14 w-full"
       >
         <AreaChart data={series} margin={{ left: 0, right: 8 }}>
           <defs>
             <linearGradient id="fillDrawdown" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.05} />
-              <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.28} />
+              <stop
+                offset="0%"
+                stopColor="var(--destructive)"
+                stopOpacity={0.05}
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--destructive)"
+                stopOpacity={0.28}
+              />
             </linearGradient>
           </defs>
           <YAxis
@@ -247,7 +285,7 @@ export function PerformanceChart({ data }: { data: EquityPoint[] }) {
             stroke="var(--destructive)"
             strokeWidth={1}
             fill="url(#fillDrawdown)"
-            isAnimationActive={isAnimationActive}
+            isAnimationActive={animate}
             {...chartAnimationProps}
           />
         </AreaChart>

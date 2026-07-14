@@ -3,7 +3,10 @@
 import * as React from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon, ArrowUpRight01Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowRight01Icon,
+  ArrowUpRight01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { cn } from "@workspace/ui/lib/utils"
 import { Card, CardHeader, CardTitle } from "@workspace/ui/components/card"
@@ -34,7 +37,7 @@ function DecisionRow({
         aria-expanded={open}
         className={cn(
           GRID,
-          "min-h-11 w-full px-4 py-3 text-left outline-none transition-colors duration-[var(--duration-instant)] hover:bg-muted/50 focus-visible:bg-muted/60"
+          "min-h-11 w-full px-4 py-3 text-left transition-colors duration-[var(--duration-instant)] outline-none hover:bg-muted/50 focus-visible:bg-muted/60"
         )}
       >
         <HugeiconsIcon
@@ -42,7 +45,7 @@ function DecisionRow({
           size={14}
           aria-hidden
           className={cn(
-            "shrink-0 text-muted-foreground transition-transform duration-[var(--duration-instant)]",
+            "shrink-0 text-muted-foreground transition-transform duration-[var(--duration-fast)] ease-in-out-cubic",
             open && "rotate-90"
           )}
         />
@@ -73,7 +76,11 @@ function DecisionRow({
         </span>
         <span className="flex flex-wrap items-center gap-1">
           {decision.statuses.map((s) => (
-            <StatusPill key={s.label ?? s.status} status={s.status} label={s.label} />
+            <StatusPill
+              key={s.label ?? s.status}
+              status={s.status}
+              label={s.label}
+            />
           ))}
         </span>
       </button>

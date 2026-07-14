@@ -97,6 +97,7 @@
     --animate-wiggle: wiggle 0.75s var(--ease-in-out-cubic) infinite;
     --animate-blink: blink 1.4s var(--ease-out-cubic) infinite;
     --animate-draw-stroke: draw-stroke 150ms var(--ease-out-quart);
+    --animate-risk-sweep: risk-sweep var(--duration-slow) var(--ease-out-quart) backwards;
 }
 
 @keyframes fade-in {
@@ -140,6 +141,12 @@
 @keyframes draw-stroke {
     from { stroke-dashoffset: 1; }
     to { stroke-dashoffset: 0; }
+}
+/* One-shot meter fill: sweeps from empty to the element's own scaleX(ratio)
+   (no `to` → falls back to the inline resting transform). GPU-composited
+   (transform), plays once on mount, never replays on re-render. */
+@keyframes risk-sweep {
+    from { transform: scaleX(0); }
 }
 
 :root {

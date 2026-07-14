@@ -1054,7 +1054,7 @@ function PathToLiveCard({
             <button
               key={version}
               type="button"
-              className="font-mono text-[11px] text-primary tabular-nums underline-offset-4 hover:underline"
+              className="font-mono text-[11px] text-primary tabular-nums underline-offset-4 transition-colors duration-[var(--duration-instant)] hover:text-primary/80 hover:underline"
             >
               {version}
             </button>
