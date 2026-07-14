@@ -1390,6 +1390,206 @@ export const RECENT_DECISIONS: RecentDecision[] = [
   { id: "rd_5", time: "2025-05-15 11:33:02", security: "MSFT", committeeView: "Buy — AI demand supports growth re-acceleration", target: "+2.10% (7.0% max)", gate: "Vetoed (Concentration)", result: "vetoed", note: "Concentration risk; factor crowding" },
 ]
 
+/* ================================================================== */
+/* Fund overview — plain-language home surface                         */
+/* Consistent with the fund-monitor clock (2025-05-15) and the equity  */
+/* series above; figures reuse the fund-monitor numbers where they     */
+/* overlap so the two surfaces never disagree. The mock's 2026 dates   */
+/* are the mock's own clock — the fixtures keep the 2025-05-15 clock.   */
+/* ================================================================== */
+
+// Status strip — the one-line "how is the fund doing?" summary.
+export type FundStatusTone = "normal" | "attention" | "critical"
+export const FUND_STATUS = {
+  tone: "normal" as FundStatusTone,
+  headline: "Fund is operating normally",
+  detail: "2 items need review · last decision cycle completed at 14:18 UTC",
+  nav: "$10.42M",
+  today: { value: "+$84.2K", change: "+0.81%", direction: "up" as const },
+  riskBudget: "72% used",
+}
+
+// What changed today — the plain-language headline over the performance chart.
+export const WHAT_CHANGED_HEADLINE =
+  "The fund gained $84.2K, led by NVDA and AAPL."
+
+// Legend annotations (period return) shown beside the performance series.
+export const PERFORMANCE_LEGEND = {
+  portfolio: { label: "Hodget Paper Portfolio", return: "+4.20%" },
+  benchmark: { label: "60/40 Benchmark", return: "+1.85%" },
+}
+
+// Top contribution (today) — signed bp bars beside the performance chart.
+// Same security-level day attribution as the fund's book.
+export type ContributionRow = { security: string; bp: number }
+export const TOP_CONTRIBUTION: ContributionRow[] = [
+  { security: "NVDA", bp: 49 },
+  { security: "AAPL", bp: 21 },
+  { security: "EQNR", bp: -8 },
+  { security: "DNB", bp: 7 },
+]
+// Axis bounds under the bars (−20bp … +60bp).
+export const CONTRIBUTION_AXIS = { min: -20, max: 60 }
+
+// Needs attention — plain-language exceptions grouped into Act now / Review.
+export type NeedsAttentionSeverity = "act" | "review"
+export type NeedsAttentionItem = {
+  id: string
+  severity: NeedsAttentionSeverity
+  title: string
+  /** First explanation line — the concrete metric. */
+  detail: string
+  /** Second line — why it matters. Empty for review-level items. */
+  because?: string
+  region: string
+  time: string
+}
+export const NEEDS_ATTENTION: NeedsAttentionItem[] = [
+  {
+    id: "na_1",
+    severity: "act",
+    title: "Tech correlation is near its limit",
+    detail: "86% used of 90% limit",
+    because: "Higher correlation reduces diversification benefit.",
+    region: "Global",
+    time: "14:27",
+  },
+  {
+    id: "na_2",
+    severity: "act",
+    title: "Europe macro data is stale",
+    detail: "8 datasets older than 2 hours",
+    because: "Stale data increases forecast uncertainty.",
+    region: "Europe",
+    time: "13:58",
+  },
+  {
+    id: "na_3",
+    severity: "review",
+    title: "EQNR position was reduced by safety rules",
+    detail: "Position size cut to reduce concentration risk.",
+    region: "Energy",
+    time: "13:21",
+  },
+  {
+    id: "na_4",
+    severity: "review",
+    title: "Macro advisor calibration weakened over 30 days",
+    detail: "Recent hit rate below rolling 30-day threshold.",
+    region: "Global",
+    time: "12:47",
+  },
+]
+export const NEEDS_ATTENTION_COUNTS = { act: 2, review: 2 }
+
+// Portfolio now — the book in plain language: what we hold and why.
+export type PortfolioView =
+  | "strong-positive"
+  | "positive"
+  | "mixed"
+  | "neutral"
+export type PortfolioPosition = {
+  security: string
+  whyHeld: string
+  weightPct: number
+  /** Renders a small "short" tag next to the weight. */
+  short?: boolean
+  dayPnl: number
+  dayPnlLabel: string
+  contributionBp: number
+  view: PortfolioView
+  viewLabel: string
+  riskFlag: boolean
+}
+export const PORTFOLIO_POSITIONS: PortfolioPosition[] = [
+  { security: "NVDA", whyHeld: "Strong value + earnings support", weightPct: 30.8, dayPnl: 52_100, dayPnlLabel: "+$52.1K", contributionBp: 49, view: "strong-positive", viewLabel: "Strong positive", riskFlag: false },
+  { security: "AAPL", whyHeld: "Services strength offsets macro softness", weightPct: 21.6, dayPnl: 22_700, dayPnlLabel: "+$22.7K", contributionBp: 21, view: "positive", viewLabel: "Positive", riskFlag: true },
+  { security: "EQNR", whyHeld: "Energy support, weaker momentum", weightPct: 16.7, short: true, dayPnl: -8_300, dayPnlLabel: "-$8.3K", contributionBp: -8, view: "mixed", viewLabel: "Mixed", riskFlag: true },
+  { security: "DNB", whyHeld: "Regional banks; yield support", weightPct: 12.3, dayPnl: 7_600, dayPnlLabel: "+$7.6K", contributionBp: 7, view: "positive", viewLabel: "Positive", riskFlag: false },
+  { security: "MSFT", whyHeld: "Durable growth; strong balance sheet", weightPct: 10.1, dayPnl: 6_300, dayPnlLabel: "+$6.3K", contributionBp: 6, view: "positive", viewLabel: "Positive", riskFlag: false },
+  { security: "CASH", whyHeld: "Liquidity buffer", weightPct: 9.9, dayPnl: 3_800, dayPnlLabel: "+$3.8K", contributionBp: 4, view: "neutral", viewLabel: "Neutral", riskFlag: false },
+]
+export const PORTFOLIO_SUMMARY = { positions: 6, gross: "156.3%", net: "38.6%" }
+
+// Forward risk — the single biggest exposure plus stress scenarios.
+export type RiskScenario = { label: string; loss: number }
+export const FORWARD_RISK = {
+  largestRisk: "global technology concentration",
+  riskBudgetPct: 72,
+  riskBudgetLabel: "72% used",
+  scenarios: [
+    { label: "Global recession", loss: -7.8 },
+    { label: "AI selloff", loss: -6.8 },
+    { label: "Rates +100bp", loss: -2.1 },
+  ] satisfies RiskScenario[],
+}
+
+// Why the system acted — the decision funnel from raw views to trades.
+export type FunnelStep = { value: string; label: string }
+export const DECISION_FUNNEL: FunnelStep[] = [
+  { value: "1,284", label: "views formed" },
+  { value: "892", label: "had enough evidence" },
+  { value: "312", label: "combined decisions" },
+  { value: "18", label: "changed by safety rules" },
+  { value: "294", label: "trades" },
+]
+
+// Recent decisions — plain-language trade log with expandable explainers.
+export type DecisionStatus = "executed" | "passed" | "clipped"
+export type FundDecision = {
+  id: string
+  title: string
+  explainer: string
+  time: string
+  /** Advisor agreement, 0–100. */
+  agreementPct: number
+  impactBp: number
+  statuses: { status: DecisionStatus; label?: string }[]
+}
+export const FUND_DECISIONS: FundDecision[] = [
+  {
+    id: "fd_1",
+    title: "Bought 412 NVDA @ $184.20",
+    explainer:
+      "Two 10-day views saw upside; safety reduced the position from 8.5% to 6.0%.",
+    time: "14:08:17",
+    agreementPct: 80,
+    impactBp: 49,
+    statuses: [
+      { status: "executed" },
+      { status: "clipped", label: "Reduced by risk" },
+    ],
+  },
+  {
+    id: "fd_2",
+    title: "Bought 286 AAPL @ $189.44",
+    explainer: "Services strength outweighed softer macro signals.",
+    time: "13:52:31",
+    agreementPct: 92,
+    impactBp: 21,
+    statuses: [{ status: "executed" }, { status: "passed" }],
+  },
+  {
+    id: "fd_3",
+    title: "Reduced EQNR target to 2.5%",
+    explainer:
+      "Energy support remained, but concentration and momentum weakened.",
+    time: "13:21:44",
+    agreementPct: 60,
+    impactBp: -8,
+    statuses: [{ status: "clipped", label: "Changed by safety" }],
+  },
+]
+
+// System trust — the four operational-integrity readouts.
+export type SystemTrustStat = { label: string; value: string; check?: boolean }
+export const SYSTEM_TRUST: SystemTrustStat[] = [
+  { label: "Data current", value: "96%" },
+  { label: "Advisors healthy", value: "5 / 6" },
+  { label: "Outputs parsed", value: "99.6%" },
+  { label: "Replay enabled", value: "", check: true },
+]
+
 // Active run (Dashboard)
 export type ActiveRunAnalyst = { name: string; type: StrategyTag; focus: string; conviction: number; status: string }
 export const ACTIVE_RUN = {

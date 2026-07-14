@@ -1,75 +1,69 @@
-import type { ReactNode } from "react"
+import * as React from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
-import { cn } from "@workspace/ui/lib/utils"
-import { Card, CardHeader, CardTitle } from "@workspace/ui/components/card"
-import { Progress } from "@workspace/ui/components/progress"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
 
-import { ENGINE_OPS } from "../demo-data"
+import { DECISION_FUNNEL, type FunnelStep } from "../demo-data"
 
-function OpRow({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: ReactNode
-  tone?: string
-}) {
+function StepBox({ step }: { step: FunnelStep }) {
   return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span
-        className={cn("font-mono font-medium tabular-nums text-foreground", tone)}
-      >
-        {value}
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 border border-border bg-card px-1.5 py-2 text-center">
+      <span className="font-mono text-sm font-semibold text-foreground tabular-nums">
+        {step.value}
+      </span>
+      <span className="text-[10px]/tight text-muted-foreground text-balance">
+        {step.label}
       </span>
     </div>
   )
 }
 
+/**
+ * "Why the system acted" — the decision funnel from raw analyst views down to
+ * executed trades, as boxed stats joined by arrows. A static explanatory
+ * diagram (no motion — it's read, not interacted with). `basePath` keeps the
+ * "Open Decisions" link correct on /dashboard and /demo.
+ */
 export function EngineOpsCard({ basePath }: { basePath: string }) {
-  const { lastCycle, running, queued, failed, activeRun } = ENGINE_OPS
   return (
     <Card>
-      <CardHeader className="px-3 pb-0">
-        <CardTitle>Engine operations</CardTitle>
+      <CardHeader className="pb-0">
+        <CardTitle>Why the system acted</CardTitle>
       </CardHeader>
-
-      <div className="flex flex-col gap-2 px-3">
-        <OpRow label="Last cycle" value={lastCycle} />
-        <OpRow label="Running" value={running} tone="text-info" />
-        <OpRow label="Queued" value={queued} />
-        <OpRow
-          label="Failed"
-          value={failed}
-          tone={failed > 0 ? "text-destructive" : "text-muted-foreground"}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5 border-t border-border px-3 pt-3">
-        <div className="flex items-center justify-between gap-2 text-xs">
-          <span className="font-mono text-foreground">
-            {activeRun.id} · {activeRun.stage}
-          </span>
-          <span className="font-mono font-medium text-foreground tabular-nums">
-            {activeRun.progressPct}%
-          </span>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex items-stretch gap-1">
+          {DECISION_FUNNEL.map((step, i) => (
+            <React.Fragment key={step.label}>
+              <StepBox step={step} />
+              {i < DECISION_FUNNEL.length - 1 ? (
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  size={12}
+                  className="shrink-0 self-center text-muted-foreground"
+                  aria-hidden
+                />
+              ) : null}
+            </React.Fragment>
+          ))}
         </div>
-        <Progress value={activeRun.progressPct} aria-label="Active run progress" />
-      </div>
 
-      <div className="flex justify-end px-3">
-        <Link
-          href={`${basePath}/runs`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:underline"
-        >
-          Open runs
-          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
-        </Link>
-      </div>
+        <div className="flex justify-end">
+          <Link
+            href={`${basePath}/decisions`}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors duration-[var(--duration-instant)] hover:underline"
+          >
+            Open Decisions
+            <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+          </Link>
+        </div>
+      </CardContent>
     </Card>
   )
 }

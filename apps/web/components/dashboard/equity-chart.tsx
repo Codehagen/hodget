@@ -12,22 +12,18 @@ import {
   chartAnimationProps,
   type ChartConfig,
 } from "@workspace/ui/components/chart"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
 
 import type { EquityPoint } from "./demo-data"
+import { PERFORMANCE_LEGEND } from "./demo-data"
 
 /**
- * Performance card — book equity vs a 60/40 reference, with a range toggle and a
- * drawdown strip underneath. The benchmark and drawdown series are derived
- * deterministically from the (already deterministic) equity curve, so the whole
- * card prerenders byte-identically on server and client. Both charts follow the
- * house chart rule: `isAnimationActive` from `useChartAnimation()` with the
- * container keyed on the same value (see Design.md §7).
+ * Performance chart — book equity vs a 60/40 reference, with a range toggle and
+ * a drawdown strip underneath. Card-less: it slots into the "What changed today"
+ * card beside the top-contribution bars. The benchmark and drawdown series are
+ * derived deterministically from the (already deterministic) equity curve, so
+ * the whole block prerenders byte-identically on server and client. Both charts
+ * follow the house chart rule: `isAnimationActive` from `useChartAnimation()`
+ * with the container keyed on the same value (see Design.md §7).
  */
 
 const RANGES = ["1D", "1M", "3M", "YTD", "1Y"] as const
@@ -78,8 +74,8 @@ function buildSeries(curve: EquityPoint[]): PerfPoint[] {
 }
 
 const perfConfig = {
-  portfolio: { label: "Hodget Paper Portfolio", color: "var(--foreground)" },
-  benchmark: { label: "Ref: 60/40 Benchmark", color: "var(--muted-foreground)" },
+  portfolio: { label: PERFORMANCE_LEGEND.portfolio.label, color: "var(--foreground)" },
+  benchmark: { label: PERFORMANCE_LEGEND.benchmark.label, color: "var(--muted-foreground)" },
 } satisfies ChartConfig
 
 const usdCompact = new Intl.NumberFormat("en-US", {
@@ -94,7 +90,7 @@ const usdFull = new Intl.NumberFormat("en-US", {
   style: "currency",
 })
 
-export function PerformanceCard({ data }: { data: EquityPoint[] }) {
+export function PerformanceChart({ data }: { data: EquityPoint[] }) {
   const isAnimationActive = useChartAnimation()
   const [range, setRange] = React.useState<Range>("YTD")
 
@@ -107,154 +103,155 @@ export function PerformanceCard({ data }: { data: EquityPoint[] }) {
   const animKey = isAnimationActive ? "animated" : "static"
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-        <CardTitle>Performance</CardTitle>
-        <div className="flex items-center gap-0.5 border border-border bg-card p-0.5">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              aria-pressed={range === r}
-              className={cn(
-                "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)]",
-                range === r
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-1">
-        <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-foreground" aria-hidden />
-            Hodget Paper Portfolio
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="h-0 w-4 border-t border-dashed border-muted-foreground"
-              aria-hidden
-            />
-            Ref: 60/40 Benchmark
-          </span>
-        </div>
+    <div className="flex flex-col gap-2">
+      {/* Range toggle */}
+      <div className="flex items-center gap-0.5 self-start border border-border bg-card p-0.5">
+        {RANGES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setRange(r)}
+            aria-pressed={range === r}
+            className={cn(
+              "px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums transition-colors duration-[var(--duration-instant)]",
+              range === r
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
 
-        <ChartContainer
-          key={`line-${animKey}`}
-          config={perfConfig}
-          className="aspect-auto h-40 w-full"
-        >
-          <LineChart data={series} margin={{ left: 0, right: 8, top: 8 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              interval="preserveStartEnd"
-              minTickGap={40}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              width={52}
-              domain={["dataMin - 150000", "dataMax + 150000"]}
-              tickFormatter={(value: number) => usdCompact.format(value)}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  indicator="line"
-                  formatter={(value, name) => (
-                    <div className="flex w-full items-center justify-between gap-3">
-                      <span className="text-muted-foreground">
-                        {perfConfig[name as keyof typeof perfConfig]?.label ??
-                          name}
-                      </span>
-                      <span className="font-mono font-medium text-foreground tabular-nums">
-                        {usdFull.format(Number(value))}
-                      </span>
-                    </div>
-                  )}
-                />
-              }
-            />
-            <Line
-              dataKey="benchmark"
-              type="monotone"
-              stroke="var(--color-benchmark)"
-              strokeWidth={1.25}
-              strokeDasharray="4 3"
-              dot={false}
-              isAnimationActive={isAnimationActive}
-              {...chartAnimationProps}
-            />
-            <Line
-              dataKey="portfolio"
-              type="monotone"
-              stroke="var(--color-portfolio)"
-              strokeWidth={1.75}
-              dot={false}
-              isAnimationActive={isAnimationActive}
-              {...chartAnimationProps}
-            />
-          </LineChart>
-        </ChartContainer>
+      {/* Legend with period return */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 bg-foreground" aria-hidden />
+          {PERFORMANCE_LEGEND.portfolio.label}
+          <span className="font-mono font-medium tabular-nums text-success">
+            {PERFORMANCE_LEGEND.portfolio.return}
+          </span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-0 w-4 border-t border-dashed border-muted-foreground"
+            aria-hidden
+          />
+          {PERFORMANCE_LEGEND.benchmark.label}
+          <span className="font-mono font-medium tabular-nums text-success">
+            {PERFORMANCE_LEGEND.benchmark.return}
+          </span>
+        </span>
+      </div>
 
-        <div className="flex items-center gap-1.5 pt-1 text-[11px] text-muted-foreground">
-          <span>Drawdown</span>
-        </div>
-        <ChartContainer
-          key={`dd-${animKey}`}
-          config={{ drawdown: { label: "Drawdown", color: "var(--destructive)" } }}
-          className="aspect-auto h-16 w-full"
-        >
-          <AreaChart data={series} margin={{ left: 0, right: 8 }}>
-            <defs>
-              <linearGradient id="fillDrawdown" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.05} />
-                <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.28} />
-              </linearGradient>
-            </defs>
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              width={52}
-              domain={["dataMin", 0]}
-              tickFormatter={(value: number) => `${value.toFixed(0)}%`}
-              ticks={[0]}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  indicator="line"
-                  formatter={(value) => (
-                    <span className="font-mono font-medium text-destructive tabular-nums">
-                      {Number(value).toFixed(2)}%
+      <ChartContainer
+        key={`line-${animKey}`}
+        config={perfConfig}
+        className="aspect-auto h-40 w-full"
+      >
+        <LineChart data={series} margin={{ left: 0, right: 8, top: 8 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="date"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            interval="preserveStartEnd"
+            minTickGap={40}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            width={52}
+            domain={["dataMin - 150000", "dataMax + 150000"]}
+            tickFormatter={(value: number) => usdCompact.format(value)}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                formatter={(value, name) => (
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {perfConfig[name as keyof typeof perfConfig]?.label ?? name}
                     </span>
-                  )}
-                />
-              }
-            />
-            <Area
-              dataKey="drawdown"
-              type="monotone"
-              stroke="var(--destructive)"
-              strokeWidth={1}
-              fill="url(#fillDrawdown)"
-              isAnimationActive={isAnimationActive}
-              {...chartAnimationProps}
-            />
-          </AreaChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+                    <span className="font-mono font-medium text-foreground tabular-nums">
+                      {usdFull.format(Number(value))}
+                    </span>
+                  </div>
+                )}
+              />
+            }
+          />
+          <Line
+            dataKey="benchmark"
+            type="monotone"
+            stroke="var(--color-benchmark)"
+            strokeWidth={1.25}
+            strokeDasharray="4 3"
+            dot={false}
+            isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
+          />
+          <Line
+            dataKey="portfolio"
+            type="monotone"
+            stroke="var(--color-portfolio)"
+            strokeWidth={1.75}
+            dot={false}
+            isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
+          />
+        </LineChart>
+      </ChartContainer>
+
+      <div className="text-[11px] text-muted-foreground">Drawdown</div>
+      <ChartContainer
+        key={`dd-${animKey}`}
+        config={{ drawdown: { label: "Drawdown", color: "var(--destructive)" } }}
+        className="aspect-auto h-14 w-full"
+      >
+        <AreaChart data={series} margin={{ left: 0, right: 8 }}>
+          <defs>
+            <linearGradient id="fillDrawdown" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.05} />
+              <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.28} />
+            </linearGradient>
+          </defs>
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            width={52}
+            domain={["dataMin", 0]}
+            tickFormatter={(value: number) => `${value.toFixed(0)}%`}
+            ticks={[0]}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                formatter={(value) => (
+                  <span className="font-mono font-medium text-destructive tabular-nums">
+                    {Number(value).toFixed(2)}%
+                  </span>
+                )}
+              />
+            }
+          />
+          <Area
+            dataKey="drawdown"
+            type="monotone"
+            stroke="var(--destructive)"
+            strokeWidth={1}
+            fill="url(#fillDrawdown)"
+            isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
+          />
+        </AreaChart>
+      </ChartContainer>
+    </div>
   )
 }

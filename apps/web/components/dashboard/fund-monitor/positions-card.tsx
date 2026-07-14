@@ -1,17 +1,14 @@
-"use client"
-
-import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon } from "@hugeicons/core-free-icons"
 
 import { cn } from "@workspace/ui/lib/utils"
-import { Card, CardTitle } from "@workspace/ui/components/card"
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs"
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import {
   Table,
   TableBody,
@@ -22,73 +19,47 @@ import {
 } from "@workspace/ui/components/table"
 
 import {
-  POSITIONS,
-  POSITIONS_TOTALS,
-  type Position,
-  type PositionSide,
-  type StrategyTag,
+  PORTFOLIO_POSITIONS,
+  PORTFOLIO_SUMMARY,
+  type PortfolioPosition,
+  type PortfolioView,
 } from "../demo-data"
-import {
-  formatBps,
-  formatCurrencyCompact,
-  formatSignedCurrencyCompact,
-  pnlToneClass,
-} from "../format"
-import { ConvictionBar, StatusPill } from "../primitives"
-
-/* Local, view-only enrichment: a sector per security, so the "Sectors" tab has
- * something real to aggregate without touching the shared fixtures. */
-const SECTOR_BY_SECURITY: Record<string, string> = {
-  NVDA: "Semiconductors",
-  AAPL: "Tech hardware",
-  EQNR: "Energy",
-  DNB: "Financials",
-  MSFT: "Software",
-  CASH: "Cash",
-}
-
-const SIDE_LABEL: Record<PositionSide, string> = {
-  long: "Long",
-  short: "Short",
-  cash: "Cash",
-}
-const SIDE_TONE: Record<PositionSide, string> = {
-  long: "text-foreground",
-  short: "text-destructive",
-  cash: "text-muted-foreground",
-}
-
-const STRATEGY_LABEL: Record<StrategyTag, string> = {
-  fundamental: "Fundamental",
-  quant: "Quant",
-  macro: "Macro",
-  event: "Event",
-}
+import { formatBps, pnlToneClass } from "../format"
+import { SegmentBar } from "../primitives"
 
 const NUM = "text-right font-mono tabular-nums"
 
-/* ---- Positions tab (the full dense book) ---------------------------------- */
+// Current-view label → segmented-bar shape (tone + lit segments over 3).
+const VIEW_BAR: Record<
+  PortfolioView,
+  { tone: "success" | "warning" | "muted"; filled: number }
+> = {
+  "strong-positive": { tone: "success", filled: 3 },
+  positive: { tone: "success", filled: 2 },
+  mixed: { tone: "warning", filled: 1 },
+  neutral: { tone: "muted", filled: 0 },
+}
 
-function PositionRow({ p }: { p: Position }) {
+function PositionRow({ p }: { p: PortfolioPosition }) {
+  const view = VIEW_BAR[p.view]
   return (
     <TableRow>
       <TableCell className="font-mono font-medium text-foreground">
         {p.security}
       </TableCell>
-      <TableCell>
-        {p.strategyTag ? (
-          <StatusPill status={p.strategyTag} />
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className={cn("text-xs font-medium", SIDE_TONE[p.side])}>
-        {SIDE_LABEL[p.side]}
+      <TableCell className="text-xs text-muted-foreground">
+        {p.whyHeld}
       </TableCell>
       <TableCell className={cn(NUM, "text-foreground")}>
-        {p.marketValueLabel}
+        <span className="inline-flex items-center justify-end gap-1.5">
+          {p.short ? (
+            <span className="font-sans text-[10px] font-medium tracking-wide text-destructive uppercase">
+              short
+            </span>
+          ) : null}
+          {p.weightPct}%
+        </span>
       </TableCell>
-      <TableCell className={cn(NUM, "text-foreground")}>{p.weightPct}%</TableCell>
       <TableCell className={cn(NUM, pnlToneClass(p.dayPnl), "font-medium")}>
         {p.dayPnlLabel}
       </TableCell>
@@ -98,15 +69,10 @@ function PositionRow({ p }: { p: Position }) {
         {formatBps(p.contributionBp)}
       </TableCell>
       <TableCell>
-        {p.conviction == null ? (
-          <span className="text-muted-foreground">—</span>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">−</span>
-            <ConvictionBar value={p.conviction} showValue={false} />
-            <span className="text-[11px] text-muted-foreground">+</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <span className="w-24 text-xs text-foreground">{p.viewLabel}</span>
+          <SegmentBar filled={view.filled} total={3} tone={view.tone} />
+        </div>
       </TableCell>
       <TableCell className="text-center">
         {p.riskFlag ? (
@@ -124,182 +90,42 @@ function PositionRow({ p }: { p: Position }) {
   )
 }
 
-function PositionsTable() {
-  return (
-    <div className="flex flex-col">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>Security</TableHead>
-            <TableHead>Strategy</TableHead>
-            <TableHead>Position</TableHead>
-            <TableHead className="text-right">Position (MV)</TableHead>
-            <TableHead className="text-right">Weight</TableHead>
-            <TableHead className="text-right">Day P&amp;L</TableHead>
-            <TableHead className="text-right">Contribution</TableHead>
-            <TableHead>Conviction</TableHead>
-            <TableHead className="text-center">Risk flag</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {POSITIONS.map((p) => (
-            <PositionRow key={p.security} p={p} />
-          ))}
-        </TableBody>
-      </Table>
-      <TotalsRow />
-    </div>
-  )
-}
-
-function TotalsRow() {
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-x-8 gap-y-1 border-t border-border px-3 py-3 text-xs">
-      <TotalStat label="Gross" value={POSITIONS_TOTALS.gross} />
-      <TotalStat label="Net" value={POSITIONS_TOTALS.net} />
-      <TotalStat
-        label="Day P&L"
-        value={POSITIONS_TOTALS.dayPnl}
-        className="text-success"
-      />
-    </div>
-  )
-}
-
-function TotalStat({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: string
-  className?: string
-}) {
-  return (
-    <span className="flex items-center gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span
-        className={cn(
-          "font-mono font-medium tabular-nums text-foreground",
-          className
-        )}
-      >
-        {value}
-      </span>
-    </span>
-  )
-}
-
-/* ---- Strategies / Sectors tabs (aggregated) ------------------------------- */
-
-type Group = {
-  key: string
-  label: React.ReactNode
-  marketValue: number
-  weightPct: number
-  dayPnl: number
-  contributionBp: number
-}
-
-function aggregate(
-  groupOf: (p: Position) => { key: string; label: React.ReactNode }
-): Group[] {
-  const map = new Map<string, Group>()
-  for (const p of POSITIONS) {
-    const { key, label } = groupOf(p)
-    const g =
-      map.get(key) ??
-      ({
-        key,
-        label,
-        marketValue: 0,
-        weightPct: 0,
-        dayPnl: 0,
-        contributionBp: 0,
-      } satisfies Group)
-    g.marketValue += p.marketValue
-    g.weightPct += p.weightPct
-    g.dayPnl += p.dayPnl
-    g.contributionBp += p.contributionBp
-    map.set(key, g)
-  }
-  return [...map.values()].sort((a, b) => b.contributionBp - a.contributionBp)
-}
-
-function GroupTable({ groups }: { groups: Group[] }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Group</TableHead>
-          <TableHead className="text-right">Net MV</TableHead>
-          <TableHead className="text-right">Weight</TableHead>
-          <TableHead className="text-right">Day P&amp;L</TableHead>
-          <TableHead className="text-right">Contribution</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {groups.map((g) => (
-          <TableRow key={g.key}>
-            <TableCell className="font-medium text-foreground">
-              {g.label}
-            </TableCell>
-            <TableCell className={cn(NUM, "text-foreground")}>
-              {g.marketValue < 0
-                ? formatSignedCurrencyCompact(g.marketValue)
-                : formatCurrencyCompact(g.marketValue)}
-            </TableCell>
-            <TableCell className={cn(NUM, "text-foreground")}>
-              {g.weightPct.toFixed(1)}%
-            </TableCell>
-            <TableCell className={cn(NUM, pnlToneClass(g.dayPnl), "font-medium")}>
-              {formatSignedCurrencyCompact(g.dayPnl)}
-            </TableCell>
-            <TableCell
-              className={cn(NUM, pnlToneClass(g.contributionBp), "font-medium")}
-            >
-              {formatBps(g.contributionBp)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
-
-const STRATEGY_GROUPS = aggregate((p) => ({
-  key: p.strategyTag ?? "cash",
-  label: p.strategyTag ? STRATEGY_LABEL[p.strategyTag] : "Cash",
-}))
-const SECTOR_GROUPS = aggregate((p) => {
-  const sector = SECTOR_BY_SECURITY[p.security] ?? "Other"
-  return { key: sector, label: sector }
-})
-
-/* ---- Card ----------------------------------------------------------------- */
-
+/**
+ * "Portfolio now" — the book in plain language: what the fund holds, why it
+ * holds it, today's P&L and contribution, the current view (a labelled
+ * 3-segment strength bar), and a risk flag. Purely presentational over the
+ * deterministic `PORTFOLIO_POSITIONS` fixture.
+ */
 export function PositionsCard() {
   return (
     <Card className="gap-0 py-0">
-      <Tabs defaultValue="positions" className="gap-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-3 pt-3 pb-3">
-          <CardTitle>Positions &amp; contribution</CardTitle>
-          <TabsList variant="line">
-            <TabsTrigger value="positions">Positions</TabsTrigger>
-            <TabsTrigger value="strategies">Strategies</TabsTrigger>
-            <TabsTrigger value="sectors">Sectors</TabsTrigger>
-          </TabsList>
-        </div>
-        <TabsContent value="positions">
-          <PositionsTable />
-        </TabsContent>
-        <TabsContent value="strategies">
-          <GroupTable groups={STRATEGY_GROUPS} />
-        </TabsContent>
-        <TabsContent value="sectors">
-          <GroupTable groups={SECTOR_GROUPS} />
-        </TabsContent>
-      </Tabs>
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle>Portfolio now</CardTitle>
+        <CardDescription className="font-mono tabular-nums">
+          {PORTFOLIO_SUMMARY.positions} positions · {PORTFOLIO_SUMMARY.gross}{" "}
+          gross · {PORTFOLIO_SUMMARY.net} net
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0 pb-1">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="pl-4">Security</TableHead>
+              <TableHead>Why held</TableHead>
+              <TableHead className="text-right">Weight</TableHead>
+              <TableHead className="text-right">Today</TableHead>
+              <TableHead className="text-right">Contribution</TableHead>
+              <TableHead>Current view</TableHead>
+              <TableHead className="pr-4 text-center">Risk</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {PORTFOLIO_POSITIONS.map((p) => (
+              <PositionRow key={p.security} p={p} />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   )
 }

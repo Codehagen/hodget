@@ -419,6 +419,45 @@ export function AgreementBar({
 }
 
 /**
+ * A small segmented meter — `filled` of `total` cells lit in `tone`, the rest
+ * muted. Static by design: a frequently-scanned inline indicator, so no
+ * animation (Design.md frequency rule). Backs the advisor-agreement strip and
+ * the "current view" 3-segment bar on the Fund overview.
+ */
+export function SegmentBar({
+  filled,
+  total,
+  tone = "success",
+  className,
+}: {
+  filled: number
+  total: number
+  tone?: "success" | "warning" | "muted"
+  className?: string
+}) {
+  const toneClass =
+    tone === "warning"
+      ? "bg-warning"
+      : tone === "muted"
+        ? "bg-muted-foreground/50"
+        : "bg-success"
+  const lit = Math.max(0, Math.min(total, filled))
+  return (
+    <div className={cn("flex items-center gap-0.5", className)} aria-hidden>
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={cn(
+            "h-1.5 w-3 rounded-none",
+            i < lit ? toneClass : "bg-muted"
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+/**
  * Labeled weight bar for a committee lineup entry. `weight` is a 0..1 share; it
  * renders as a percentage with a proportional bar.
  */

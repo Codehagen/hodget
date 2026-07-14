@@ -43,8 +43,8 @@ export const NAV_GROUPS = [
   {
     label: "Engine",
     items: [
-      { title: "Runs", href: "/runs", icon: RocketIcon },
       { title: "Decisions", href: "/decisions", icon: Flowchart01Icon },
+      { title: "Runs", href: "/runs", icon: RocketIcon },
       { title: "Strategies", href: "/strategies", icon: AiBrain01Icon },
       { title: "Analysts", href: "/analysts", icon: UserMultiple02Icon },
       { title: "Data", href: "/data", icon: Database01Icon },

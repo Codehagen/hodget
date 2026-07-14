@@ -15,17 +15,18 @@ import {
 } from "@workspace/ui/components/select"
 
 import type { DashboardData } from "./demo-data"
-import { OverviewStats } from "./overview-stats"
-import { PerformanceCard } from "./equity-chart"
+import { StatusStrip } from "./overview-stats"
 import { AttentionPanel } from "./fund-monitor/attention-panel"
-import { AttributionCard } from "./fund-monitor/attribution-card"
 import { EngineOpsCard } from "./fund-monitor/engine-ops-card"
 import { PositionsCard } from "./fund-monitor/positions-card"
 import { RecentDecisionsCard } from "./fund-monitor/recent-decisions-card"
 import { RiskCard } from "./fund-monitor/risk-card"
+import { SystemTrustCard } from "./fund-monitor/system-trust-card"
+import { WhatChangedCard } from "./fund-monitor/what-changed-card"
 
 // Deterministic — the engine reports UTC, and a mocked timestamp must never vary
-// between server and client render (keeps the /demo page prerenderable).
+// between server and client render (keeps the /demo page prerenderable). The
+// mock's 2026 clock is the mock's own; the fixtures keep the 2025-05-15 clock.
 const AS_OF = "2025-05-15 14:32 UTC"
 
 const PORTFOLIOS = [
@@ -35,12 +36,13 @@ const PORTFOLIOS = [
 ] as const
 
 /**
- * Fund monitor — the engine's home surface: portfolio, risk, attribution, and
- * exceptions on one dense page. Purely presentational; every figure comes from
- * the deterministic fixtures in `demo-data`, so the same view backs both the
- * public `/demo` route and the authenticated `/dashboard` (the optional `notice`
+ * Fund overview — the engine's home surface. Answers three questions on one
+ * dense page: what the fund owns, why it changed today, and what needs a
+ * human's attention. Purely presentational; every figure comes from the
+ * deterministic fixtures in `demo-data`, so the same view backs both the public
+ * `/demo` route and the authenticated `/dashboard` (the optional `notice`
  * renders the dashboard's "sample data" caveat next to the title). `data.equity`
- * feeds the performance chart; the rest reads the fund-monitor fixtures directly.
+ * feeds the performance chart; the rest reads the Fund-overview fixtures.
  */
 export function DashboardView({
   data,
@@ -61,12 +63,12 @@ export function DashboardView({
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-xl font-bold tracking-tight text-foreground">
-              Fund monitor
+              Fund overview
             </h1>
             {notice}
           </div>
           <p className="text-sm text-muted-foreground">
-            Portfolio, risk, attribution, and exceptions.
+            What the fund owns, why it changed, and what needs attention.
           </p>
         </div>
 
@@ -99,27 +101,34 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* KPI strip */}
-      <OverviewStats />
+      {/* Status strip */}
+      <StatusStrip />
 
-      {/* Main grid */}
+      {/* Row 1 — what changed today + needs attention */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        {/* Left — positions, performance/attribution, decisions */}
-        <div className="flex flex-col gap-4 xl:col-span-2">
-          <PositionsCard />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
-            <PerformanceCard data={data.equity} />
-            <AttributionCard />
-          </div>
-          <RecentDecisionsCard basePath={basePath} />
+        <div className="xl:col-span-2">
+          <WhatChangedCard data={data.equity} />
         </div>
+        <AttentionPanel />
+      </div>
 
-        {/* Right — attention, risk, engine operations */}
+      {/* Row 2 — portfolio now + forward risk / why the system acted */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <PositionsCard />
+        </div>
         <div className="flex flex-col gap-4">
-          <AttentionPanel />
           <RiskCard basePath={basePath} />
           <EngineOpsCard basePath={basePath} />
         </div>
+      </div>
+
+      {/* Row 3 — recent decisions + system trust */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <RecentDecisionsCard basePath={basePath} />
+        </div>
+        <SystemTrustCard />
       </div>
     </div>
   )
