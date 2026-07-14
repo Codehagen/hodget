@@ -1,75 +1,98 @@
+import type * as React from "react"
 import Link from "next/link"
 
+import { RevealOnScroll } from "@/components/landing/reveal"
+
 /**
- * Static explainer for the "How it works" tab on the landing page — the five
- * questions the decision map answers, in order. Copy mirrors the decision-map
- * stage headers (components/dashboard/decision-map/layout.ts) and the tone of
- * the "Reading the decision map" blog post. Server-renderable; no motion.
+ * "How it works" — a vertical numbered walkthrough of the five questions a
+ * decision answers, in order, joined by a connecting line. Copy mirrors the
+ * decision-map stage headers and the "Reading the decision map" post. The steps
+ * rise in a staggered wave on first view (RevealOnScroll stagger); the decision
+ * tree itself now lives in the hero, so this section is pure narrative.
  */
 const STEPS = [
   {
     question: "What did we know?",
-    body: "Every decision starts from a point-in-time snapshot — the prices, fundamentals, and policy in force at that moment, with nothing from the future leaking in.",
+    body: "Every decision starts from a point-in-time snapshot: the prices, fundamentals, and policy in force at that moment, with nothing from the future leaking in.",
   },
   {
     question: "What did advisors think?",
-    body: "A committee of AI analysts reads that snapshot independently. Each forms its own view — a direction, a conviction, and a thesis — without seeing the others.",
+    body: "A committee of AI advisors reads that snapshot independently, and each forms its own view with a direction, a conviction, and a thesis.",
   },
   {
     question: "How were views combined?",
-    body: "The committee weighs those views into one net position, and records exactly which analysts it included and which it set aside.",
+    body: "The committee weighs those views into one net position and records which advisors it included and which it set aside.",
   },
   {
     question: "What did safety change?",
-    body: "A deterministic risk gate sizes the position and applies hard limits. It can clip a target down or veto it outright — and the map shows the change directly, like a target cut from 8.50% to 6.00%.",
+    body: "A deterministic risk gate sizes the position and applies hard limits, clipping a target down or vetoing it outright.",
   },
   {
     question: "What was executed?",
-    body: "If the position survives the gate, it trades and the fill is recorded. If it never traded, there's no execution to show — and the map simply doesn't draw one.",
+    body: "If the position survives the gate it trades and the fill is recorded; if it never traded, there is nothing to show.",
   },
 ]
 
 export function HowItWorks() {
   return (
-    <div className="flex flex-col gap-8">
-      <ol className="flex flex-col gap-6">
-        {STEPS.map((step, i) => (
-          <li key={step.question} className="flex gap-4">
-            <span className="flex size-7 shrink-0 items-center justify-center bg-foreground font-heading text-sm font-black tabular-nums text-background">
-              {i + 1}
-            </span>
-            <div className="flex flex-col gap-1 pt-0.5">
-              <h3 className="font-heading text-base font-bold tracking-tight text-foreground">
-                {step.question}
-              </h3>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                {step.body}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-
-      <div className="flex flex-col gap-4 border-t border-border pt-6">
-        <p className="max-w-2xl text-sm text-foreground">
-          Views are opinions. Deterministic code sizes positions, applies safety
-          limits, and records fills.
+    <section
+      id="how-it-works"
+      className="mx-auto w-full max-w-7xl scroll-mt-20 px-4 py-24 sm:px-6"
+    >
+      <div className="max-w-2xl">
+        <h2 className="text-balance font-heading text-3xl font-black tracking-tight text-foreground sm:text-4xl">
+          How it works
+        </h2>
+        <p className="mt-3 text-lg text-muted-foreground">
+          One position, five questions, answered in order.
         </p>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+      </div>
+
+      <RevealOnScroll stagger className="mt-12 max-w-2xl">
+        <ol className="flex flex-col">
+          {STEPS.map((step, i) => (
+            <li
+              key={step.question}
+              className="reveal-stagger-item relative flex gap-5 pb-10 last:pb-0"
+              style={{ "--reveal-index": i } as React.CSSProperties}
+            >
+              {i < STEPS.length - 1 ? (
+                <span
+                  aria-hidden
+                  className="absolute top-8 bottom-0 left-3.5 w-px -translate-x-1/2 bg-border"
+                />
+              ) : null}
+              <span className="relative z-10 flex size-7 shrink-0 items-center justify-center bg-foreground font-heading text-sm font-black text-background tabular-nums">
+                {i + 1}
+              </span>
+              <div className="flex flex-col gap-1.5 pt-0.5">
+                <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
+                  {step.question}
+                </h3>
+                <p className="text-muted-foreground">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div
+          className="reveal-stagger-item mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 pl-12 text-sm"
+          style={{ "--reveal-index": STEPS.length } as React.CSSProperties}
+        >
           <Link
             href="/blog/reading-the-decision-map"
-            className="font-medium text-foreground hover:underline"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Reading the decision map →
+            Read how the decision map works
           </Link>
           <Link
             href="/demo/decisions"
-            className="font-medium text-foreground hover:underline"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            See it in the product →
+            See it live
           </Link>
         </div>
-      </div>
-    </div>
+      </RevealOnScroll>
+    </section>
   )
 }

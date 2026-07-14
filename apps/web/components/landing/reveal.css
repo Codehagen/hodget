@@ -1,0 +1,34 @@
+/*
+ * Scroll-reveal primitive for the landing page (Design.md motion dial 4).
+ * Generalizes the canvas-reveal gate: an element mounts with
+ * `data-reveal="hidden"`, and RevealOnScroll's one-shot IntersectionObserver
+ * flips it to `"shown"` on first view. Plays once, never replays (the observer
+ * disconnects after the first intersection).
+ *
+ * All movement lives inside a `prefers-reduced-motion: no-preference` block, so
+ * reduced-motion users get the content instantly, fully visible, with nothing
+ * translating — the "remove, don't just slow down" posture from Design.md §11.
+ * Because the hidden state is only applied under that query, a reduced-motion
+ * visitor is never left staring at invisible content.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Section reveal — the whole block fades and rises as one unit. */
+  .reveal-on-scroll:not(.reveal-stagger) {
+    transition:
+      opacity var(--duration-page) var(--ease-out-quart),
+      transform var(--duration-page) var(--ease-out-quart);
+  }
+  .reveal-on-scroll:not(.reveal-stagger)[data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  /* Stagger reveal — children rise in a wave (how-it-works only). */
+  .reveal-stagger[data-reveal="hidden"] .reveal-stagger-item {
+    opacity: 0;
+  }
+  .reveal-stagger[data-reveal="shown"] .reveal-stagger-item {
+    animation: slide-up-fade var(--duration-page) var(--ease-out-quart) both;
+    animation-delay: calc(var(--reveal-index, 0) * 60ms);
+  }
+}
