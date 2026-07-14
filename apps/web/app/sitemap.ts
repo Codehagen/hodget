@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     })),
     { url: `${HOME_DOMAIN}/demo`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${HOME_DOMAIN}/waitlist`, priority: 0.5 },
     { url: `${HOME_DOMAIN}/playbook`, priority: 0.4 },
   ]
 }

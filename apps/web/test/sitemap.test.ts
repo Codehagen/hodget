@@ -23,7 +23,7 @@ describe("sitemap", () => {
     const entries = await sitemap()
     const urls = entries.map((entry) => entry.url)
 
-    for (const path of ["/blog", "/blog/introducing-hodget", "/demo", "/playbook"]) {
+    for (const path of ["/blog", "/blog/introducing-hodget", "/demo", "/waitlist", "/playbook"]) {
       expect(urls.some((url) => url.endsWith(path))).toBe(true)
     }
     // No double slashes from HOME_DOMAIN joins.

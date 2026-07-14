@@ -124,23 +124,27 @@ export function NavDemoUser() {
           <div className="grid gap-1 leading-tight">
             <span className="text-sm font-medium">Exploring the demo</span>
             <span className="text-xs text-muted-foreground">
-              Everything here is sample data. Create a free account to run
-              your own strategies.
+              Everything here is sample data. Hodget is invite-only while in
+              development — join the waitlist to run your own strategies.
             </span>
           </div>
-          <Button size="sm" className="w-full" render={<Link href="/sign-up" />}>
+          <Button
+            size="sm"
+            className="w-full"
+            render={<Link href="/waitlist?source=demo-sidebar" />}
+          >
             <HugeiconsIcon icon={UserAdd01Icon} size={16} />
-            Sign up
+            Join the waitlist
           </Button>
         </div>
       </SidebarMenuItem>
       <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
         <SidebarMenuButton
-          tooltip="Sign up"
-          render={<Link href="/sign-up" />}
+          tooltip="Join the waitlist"
+          render={<Link href="/waitlist?source=demo-sidebar" />}
         >
           <HugeiconsIcon icon={UserAdd01Icon} size={16} />
-          <span>Sign up</span>
+          <span>Join the waitlist</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
