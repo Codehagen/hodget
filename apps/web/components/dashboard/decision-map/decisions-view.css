@@ -1,0 +1,20 @@
+/*
+ * Decisions page — entrance-stagger gate.
+ *
+ * The decision-map canvas plays a one-time staggered fade-in on mount
+ * (decision-flow.css). On the standalone Decisions page the canvas is REMOUNTED
+ * every time the user picks another decision row (React Flow's `useNodesState`
+ * only reads its initial nodes, so a keyed remount is how the graph swaps). That
+ * makes row-clicking a frequent interaction — Design.md's frequency rule says a
+ * surface seen dozens of times a session should not animate. So we suppress the
+ * entrance keyframe on every swap after the first mount: DecisionsView flips
+ * `data-entrance="off"` on the wrapper the moment the selected decision changes.
+ *
+ * We null out `animation-name` only (not the shorthand) so the inline
+ * `animation-delay` / `animation-fill-mode` longhands buildNodes sets stay
+ * harmless. The first, on-load entrance keeps `data-entrance="on"` and plays.
+ */
+.decisions-map[data-entrance="off"] .decision-map-canvas .react-flow__node,
+.decisions-map[data-entrance="off"] .decision-map-canvas .react-flow__edges {
+  animation-name: none;
+}
