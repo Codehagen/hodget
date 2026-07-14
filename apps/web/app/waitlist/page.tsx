@@ -31,7 +31,7 @@ export default async function WaitlistPage({
 
   return (
     <main className="flex min-h-svh items-center justify-center p-6">
-      <Card className="w-full max-w-sm animate-fade-in">
+      <Card className="w-full max-w-sm motion-safe:animate-fade-in">
         <CardHeader>
           <CardTitle className="text-base">Join the waitlist</CardTitle>
           <CardDescription>

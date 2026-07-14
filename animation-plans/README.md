@@ -56,6 +56,7 @@ Audit provenance:
 | [032](032-strategies-version-history-buttons.md) | Strategies version-history inline buttons get sibling hover | LOW | Cohesion | DONE |
 | [033](033-landing-page-motion-fixes.md) | Landing page motion fixes (hero intro once-per-load, footer duration, canvas scroll-entrance) | MEDIUM/LOW | Frequency / Cohesion / Missed opportunity | DONE |
 | [034](034-summary-tab-timeline-draw.md) | Decisions Summary tab: timeline one-time draw + Open-evidence focus ring | LOW | Missed opportunity / Accessibility | DONE |
+| [035](035-waitlist-success-polish.md) | Waitlist: success-state fade + entrance idiom, no card collapse | LOW | Cohesion / Missed opportunity | DONE |
 
 ## Recommended execution order & dependencies
 

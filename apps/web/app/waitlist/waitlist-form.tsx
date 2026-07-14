@@ -23,7 +23,12 @@ export function WaitlistForm({ source = "landing" }: { source?: string }) {
 
   if (state.status === "success") {
     return (
-      <div className="flex flex-col gap-1.5" aria-live="polite">
+      // min-h matches the form so the card doesn't collapse on the swap; the
+      // confirmation fades in as the one meaningful state change on this page.
+      <div
+        className="flex min-h-32 flex-col gap-1.5 motion-safe:animate-fade-in"
+        aria-live="polite"
+      >
         <p className="text-sm font-medium text-foreground">{state.message}</p>
         <p className="text-sm text-muted-foreground">
           We&apos;ll email you when your invite is ready.
@@ -38,7 +43,7 @@ export function WaitlistForm({ source = "landing" }: { source?: string }) {
     state.status === "error" && !state.field ? state.message : null
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex min-h-32 flex-col gap-4">
       <input type="hidden" name="source" value={source} />
       <Field>
         <FieldLabel htmlFor="email">Email</FieldLabel>
