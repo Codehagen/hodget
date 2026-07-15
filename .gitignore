@@ -50,3 +50,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+# playwright
+playwright-report/
+test-results/

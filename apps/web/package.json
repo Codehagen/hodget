@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "auth:generate": "npx @better-auth/cli generate --config lib/auth.ts",
-    "db:types": "supabase gen types typescript --linked > lib/supabase/types.ts"
+    "db:types": "supabase gen types typescript --linked > lib/supabase/types.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.30",
@@ -45,6 +46,7 @@
     "workflow": "4.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@testing-library/react": "^16.3.2",
