@@ -62,3 +62,33 @@ describe("runConfigSchema — range", () => {
     expect(runConfigSchema.safeParse(BASE).success).toBe(true)
   })
 })
+
+describe("runConfigSchema — abuse caps (plan 009)", () => {
+  it("rejects more than 200 securityIds and accepts 200", () => {
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => `SEC${i}`)
+    expect(
+      runConfigSchema.safeParse({ ...BASE, securityIds: ids(201) }).success,
+    ).toBe(false)
+    expect(
+      runConfigSchema.safeParse({ ...BASE, securityIds: ids(200) }).success,
+    ).toBe(true)
+  })
+
+  it("rejects a security id longer than 40 chars", () => {
+    expect(
+      runConfigSchema.safeParse({ ...BASE, securityIds: ["X".repeat(41)] })
+        .success,
+    ).toBe(false)
+  })
+
+  it("rejects a panel with more than 16 seats and a name over 120 chars", () => {
+    const seats = Array.from({ length: 17 }, (_, i) => ({
+      id: `a${i}`,
+      weight: 1,
+    }))
+    expect(
+      runConfigSchema.safeParse({ ...BASE, panel: { analysts: seats } })
+        .success,
+    ).toBe(false)
+  })
+})

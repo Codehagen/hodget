@@ -14,6 +14,26 @@ export type WaitlistInsertResult =
   | { ok: true; duplicate: boolean }
   | { ok: false }
 
+/**
+ * Best-effort, per-instance rate limit: serverless instances don't share
+ * memory, so this bounds abuse per warm instance rather than globally. The
+ * global backstop is the DB unique index + RLS; platform-level limiting
+ * (e.g. a WAF rule) can be layered on in ops without code changes.
+ */
+const WINDOW_MS = 60_000
+const MAX_PER_WINDOW = 5
+const hits = new Map<string, { windowStart: number; count: number }>()
+
+export function allowWaitlistAttempt(key: string, now = Date.now()): boolean {
+  const entry = hits.get(key)
+  if (!entry || now - entry.windowStart >= WINDOW_MS) {
+    hits.set(key, { windowStart: now, count: 1 })
+    return true
+  }
+  entry.count += 1
+  return entry.count <= MAX_PER_WINDOW
+}
+
 export async function insertWaitlistEmail(
   email: string,
   source: string

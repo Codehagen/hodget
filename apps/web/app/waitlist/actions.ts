@@ -1,6 +1,8 @@
 "use server"
 
-import { insertWaitlistEmail } from "@/lib/dal/waitlist"
+import { headers } from "next/headers"
+
+import { allowWaitlistAttempt, insertWaitlistEmail } from "@/lib/dal/waitlist"
 
 /**
  * The waitlist form's server-action result. `idle` is the initial state; a
@@ -41,6 +43,15 @@ export async function joinWaitlist(
       field: "email",
       message: "Enter a valid email address.",
     }
+  }
+
+  // Best-effort per-IP rate limit (plan 009). The response is the same
+  // generic error as any other failure so the limiter is not observable.
+  const ip =
+    (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+  if (!allowWaitlistAttempt(ip)) {
+    return { status: "error", message: GENERIC_ERROR }
   }
 
   // Fail soft when Supabase isn't configured (e.g. missing local env) rather

@@ -15,21 +15,24 @@ import type { DecisionRecord } from "@workspace/engine"
 export type RunMode = "backtest" | "paper"
 export type RunStatus = "queued" | "running" | "completed" | "failed"
 
-/** One analyst seat on the panel: which analyst, and its committee weight. */
+/** One analyst seat on the panel: which analyst, and its committee weight.
+ * The .max() bounds here and below are abuse caps far above real usage
+ * (plan 009): these shapes persist verbatim into jsonb, so without them an
+ * authenticated user could store arbitrarily large payloads. */
 export const panelSeatSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1).max(100),
   weight: z.number().min(0),
 })
 export type PanelSeat = z.infer<typeof panelSeatSchema>
 
 export const panelSchema = z.object({
-  analysts: z.array(panelSeatSchema).min(1),
+  analysts: z.array(panelSeatSchema).min(1).max(16),
 })
 export type Panel = z.infer<typeof panelSchema>
 
 /** The validated body for creating a panel config (name + panel). */
 export const panelConfigInputSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(120),
   panel: panelSchema,
 })
 export type PanelConfigInput = z.infer<typeof panelConfigInputSchema>

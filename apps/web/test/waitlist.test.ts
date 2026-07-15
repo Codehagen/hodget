@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 
-import { insertWaitlistEmail } from "@/lib/dal/waitlist"
+import { allowWaitlistAttempt, insertWaitlistEmail } from "@/lib/dal/waitlist"
 
 beforeEach(() => {
   insert.mockReset()
@@ -46,5 +46,24 @@ describe("insertWaitlistEmail", () => {
   it("maps any other database error to a generic failure", async () => {
     insert.mockResolvedValue({ error: { code: "42P01" } })
     expect(await insertWaitlistEmail("a@b.co", "landing")).toEqual({ ok: false })
+  })
+})
+
+describe("allowWaitlistAttempt", () => {
+  it("allows up to 5 attempts per key per window, blocks the 6th", () => {
+    const t0 = 1_000_000
+    for (let i = 0; i < 5; i++) {
+      expect(allowWaitlistAttempt("ip-a", t0 + i)).toBe(true)
+    }
+    expect(allowWaitlistAttempt("ip-a", t0 + 5)).toBe(false)
+    // A different key is unaffected.
+    expect(allowWaitlistAttempt("ip-b", t0 + 5)).toBe(true)
+  })
+
+  it("resets when a new window starts", () => {
+    const t0 = 2_000_000
+    for (let i = 0; i < 6; i++) allowWaitlistAttempt("ip-c", t0)
+    expect(allowWaitlistAttempt("ip-c", t0)).toBe(false)
+    expect(allowWaitlistAttempt("ip-c", t0 + 60_000)).toBe(true)
   })
 })

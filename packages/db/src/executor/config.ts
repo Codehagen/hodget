@@ -15,8 +15,10 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD")
 export const runConfigSchema = z.object({
   /** Which analysts sit on the panel, and their committee weights. */
   panel: panelSchema,
-  /** Securities to trade. Defaults to every security in the dataset. */
-  securityIds: z.array(z.string().min(1)).optional(),
+  /** Securities to trade. Defaults to every security in the dataset. The
+   * caps are abuse bounds (persisted verbatim into jsonb), not business
+   * rules. */
+  securityIds: z.array(z.string().min(1).max(40)).max(200).optional(),
   /** Base currency for valuation/metrics. Defaults to USD. */
   baseCurrency: currencySchema.optional(),
   /** Starting cash per currency; each amount must be positive, at least one entry. */
