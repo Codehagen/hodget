@@ -14,7 +14,10 @@ import {
   type EquityPoint,
 } from "../demo-data"
 import { formatBps, pnlToneClass } from "../format"
-import { PerformanceChart } from "../equity-chart"
+
+// recharts is heavy; the chart loads client-side in its own async chunk via
+// the PerformanceChartLazy island (plan 010).
+import { PerformanceChartLazy as PerformanceChart } from "./performance-chart-lazy"
 
 /* Top-contribution bars — signed bp, drawn from a shared zero line over a fixed
  * −20bp … +60bp axis so the whole panel reads on one scale. Static (no motion):

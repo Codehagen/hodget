@@ -56,7 +56,22 @@ import {
 } from "./demo-data"
 import { formatInteger, pnlToneClass } from "./format"
 import { AnalystKindBadge, StatusPill } from "./primitives"
-import { SignalBehaviorChart } from "./analysts/signal-behavior-chart"
+
+import dynamic from "next/dynamic"
+
+// recharts is heavy; the chart loads in its own async chunk (plan 010).
+const SignalBehaviorChart = dynamic(
+  () =>
+    import("./analysts/signal-behavior-chart").then(
+      (m) => m.SignalBehaviorChart
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div aria-hidden className="h-[220px] w-full animate-pulse bg-muted/40" />
+    ),
+  }
+)
 
 /* ------------------------------------------------------------------ */
 /* Small local helpers                                                 */

@@ -40,8 +40,21 @@ import {
   type TodayRailItem,
 } from "./data"
 import { AuditTab, EvidenceTab } from "./decision-tabs"
-import { DecisionFlow } from "./decision-flow"
 import { AdvisorRail } from "./inspector"
+
+import dynamic from "next/dynamic"
+
+// @xyflow/react is heavy; the flow canvas loads in its own async chunk
+// (plan 010).
+const DecisionFlow = dynamic(
+  () => import("./decision-flow").then((m) => m.DecisionFlow),
+  {
+    ssr: false,
+    loading: () => (
+      <div aria-hidden className="h-[480px] w-full animate-pulse bg-muted/40" />
+    ),
+  }
+)
 import { analystNodeId } from "./layout"
 import { SummaryTab } from "./summary-tab"
 

@@ -21,7 +21,7 @@ commit `67eb565` (2026-07-15 advisor audit).
 | 007 | [Make `pnpm lint` pass on main + fix stale front-door docs](./007-green-the-lint-gate.md) | DX / Security | S | LOW | DONE |
 | 008 | [Preserve the original error and evict poisoned connections in `transaction()`](./008-transaction-rollback-integrity.md) | Bug | S | LOW | DONE |
 | 009 | [Harden the public surfaces: waitlist RLS + rate limit, schema caps, security headers](./009-harden-public-surfaces.md) | Security | M | LOW/MED | DONE |
-| 010 | [Code-split the heavy viz libraries; server-ify DashboardView](./010-code-split-heavy-viz.md) | Perf | M | LOW/MED | TODO |
+| 010 | [Code-split the heavy viz libraries; server-ify DashboardView](./010-code-split-heavy-viz.md) | Perf | M | LOW/MED | DONE |
 | 011 | [Run-stream correctness: SSE terminal fallback + workflow-id persist](./011-run-stream-correctness.md) | Bug | M | LOW/MED | TODO |
 | 012 | [Component-test foundation: jsdom harness, simulated-run tests, ui test script](./012-web-test-foundation.md) | Tests | M | LOW | TODO |
 | 013 | [Playwright E2E smoke: public surfaces + auth redirect](./013-e2e-smoke.md) | Tests | M | LOW | TODO |

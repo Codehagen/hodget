@@ -49,8 +49,20 @@ import {
 } from "./demo-data"
 import { formatSignedPercent, pnlToneClass } from "./format"
 import { StatusPill } from "./primitives"
-import { RunEquityChart } from "./run-equity-chart"
 import { CopyButton } from "./run-detail/copy-button"
+
+import dynamic from "next/dynamic"
+
+// recharts is heavy; the equity+drawdown panel loads in its own async chunk
+// (plan 010).
+const RunEquityChart = dynamic(
+  () => import("./run-equity-chart").then((m) => m.RunEquityChart),
+  {
+    loading: () => (
+      <div aria-hidden className="h-72 w-full animate-pulse bg-muted/40" />
+    ),
+  }
+)
 import { DecisionLog } from "./run-detail/decision-log"
 
 /* ------------------------------------------------------------------ */

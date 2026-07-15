@@ -12,5 +12,5 @@ export const metadata = constructMetadata({
 // Public demo — the exact dashboard UI, backed entirely by mock fixtures. No
 // session, no database, so it prerenders statically and serves 200 to anyone.
 export default function DemoPage() {
-  return <DashboardView data={DEMO_DASHBOARD} />
+  return <DashboardView data={DEMO_DASHBOARD} basePath="/demo" />
 }

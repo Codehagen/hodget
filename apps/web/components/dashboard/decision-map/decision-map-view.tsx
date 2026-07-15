@@ -20,8 +20,19 @@ import {
 import { StatusPill } from "../primitives"
 import { CopyButton } from "../run-detail/copy-button"
 import type { DecisionMap } from "./data"
-import { DecisionCanvas } from "./decision-canvas"
 import { AuditTab, EvidenceTab } from "./decision-tabs"
+
+import dynamic from "next/dynamic"
+
+// @xyflow/react is heavy; the canvas loads in its own async chunk (plan 010).
+const DecisionCanvas = dynamic(
+  () => import("./decision-canvas").then((m) => m.DecisionCanvas),
+  {
+    loading: () => (
+      <div aria-hidden className="h-[480px] w-full animate-pulse bg-muted/40" />
+    ),
+  }
+)
 
 /* ------------------------------------------------------------------ */
 /* Header                                                              */

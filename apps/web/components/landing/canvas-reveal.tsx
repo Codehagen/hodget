@@ -3,9 +3,29 @@
 import "./canvas-reveal.css"
 
 import * as React from "react"
+import dynamic from "next/dynamic"
 
 import type { DecisionMap } from "@/components/dashboard/decision-map/data"
-import { DecisionCanvas } from "@/components/dashboard/decision-map/decision-canvas"
+
+// The canvas drags @xyflow/react (+ its CSS) into whatever bundle imports it
+// statically — on the landing page that was ~100KB of below-the-fold library
+// in the critical path. Load it client-side after hydration instead; the
+// placeholder mirrors the canvas region so layout doesn't shift (plan 010).
+const DecisionCanvas = dynamic(
+  () =>
+    import("@/components/dashboard/decision-map/decision-canvas").then(
+      (m) => m.DecisionCanvas
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        aria-hidden
+        className="h-[480px] w-full animate-pulse rounded-none bg-muted/40"
+      />
+    ),
+  }
+)
 
 /**
  * Defers the decision-map's one-time entrance stagger until the canvas first
