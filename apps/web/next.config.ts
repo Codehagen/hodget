@@ -61,4 +61,10 @@ const withMDX = createMDX({
 // withWorkflow installs the webpack/turbopack loaders that transform the
 // "use workflow" / "use step" directives under workflows/. Kept as the outermost
 // wrapper so it sees the fully resolved config (transpilePackages + extensionAlias).
+//
+// Bundler pinned to webpack (--webpack in the dev/build scripts): as of
+// Next 16.2, `next build` under Turbopack fails on the MDX loader —
+// "@next/mdx/mdx-js-loader.js … does not have serializable options" (the
+// remarkPlugins function reference above). Re-probe with `npx next build`
+// on @next/mdx / Next upgrades and drop the pin when it passes (plan 015).
 export default withWorkflow(withMDX(nextConfig))

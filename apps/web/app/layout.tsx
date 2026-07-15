@@ -5,8 +5,10 @@ import { NuqsAdapter } from "nuqs/adapters/next/app"
 import "@workspace/ui/globals.css"
 import { constructMetadata } from "@/lib/metadata"
 import { ThemeProvider } from "@/components/theme-provider"
-import { QueryProvider } from "@/components/query-provider"
 import { cn } from "@workspace/ui/lib/utils";
+
+// TanStack Query returns with real data fetching (plan 003) — its provider
+// was removed as dead scaffolding until then (plan 015).
 
 export const metadata = constructMetadata()
 
@@ -41,9 +43,7 @@ export default function RootLayout({
     >
       <body>
         <NuqsAdapter>
-          <QueryProvider>
-            <ThemeProvider>{children}</ThemeProvider>
-          </QueryProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </NuqsAdapter>
       </body>
     </html>

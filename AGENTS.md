@@ -49,3 +49,6 @@ routes). E2E: `cd apps/web && pnpm build && pnpm test:e2e`.
 - House coding style: `.claude/skills/house-style` (composable primitives,
   small explicit APIs, open/inspectable code).
 - Component tests opt into a DOM per file with `// @vitest-environment jsdom`.
+- Tables: new filterable/sortable tables use the `@workspace/ui` `DataTable`
+  (its TanStack react-table wrapper); the hand-rolled `<Table>` primitive
+  stays for static fixture tables. Don't introduce a third approach.

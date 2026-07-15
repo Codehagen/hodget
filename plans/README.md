@@ -26,7 +26,7 @@ commit `67eb565` (2026-07-15 advisor audit).
 | 012 | [Component-test foundation: jsdom harness, simulated-run tests, ui test script](./012-web-test-foundation.md) | Tests | M | LOW | DONE |
 | 013 | [Playwright E2E smoke: public surfaces + auth redirect](./013-e2e-smoke.md) | Tests | M | LOW | DONE |
 | 014 | [CI Turbo cache, pre-commit hooks, env docs, real AGENTS.md](./014-ci-and-dx-loops.md) | DX | S | LOW | DONE |
-| 015 | [Resolve the three unowned frontend dependency decisions](./015-frontend-dependency-decisions.md) | Tech debt | S | LOW | TODO |
+| 015 | [Resolve the three unowned frontend dependency decisions](./015-frontend-dependency-decisions.md) | Tech debt | S | LOW | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
