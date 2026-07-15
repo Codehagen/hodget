@@ -17,6 +17,8 @@ Audit provenance:
   Decisions, and Strategies dashboard pages — at commit `1752933` (2026-07-14).
 - 033: audit of the marketing landing page (`apps/web/app/page.tsx` + its
   embedded decision-map canvas) at commit `9d9169e` (2026-07-14).
+- 036: full-repo motion audit (all eight categories, `packages/ui` +
+  `apps/web`) at commit `91466cd` (2026-07-15).
 
 ## Plans
 
@@ -57,6 +59,7 @@ Audit provenance:
 | [033](033-landing-page-motion-fixes.md) | Landing page motion fixes (hero intro once-per-load, footer duration, canvas scroll-entrance) | MEDIUM/LOW | Frequency / Cohesion / Missed opportunity | DONE |
 | [034](034-summary-tab-timeline-draw.md) | Decisions Summary tab: timeline one-time draw + Open-evidence focus ring | LOW | Missed opportunity / Accessibility | DONE |
 | [035](035-waitlist-success-polish.md) | Waitlist: success-state fade + entrance idiom, no card collapse | LOW | Cohesion / Missed opportunity | DONE |
+| [036](036-bulk-action-bar-motion-budget.md) | Bulk-action bar: entrance to base duration, motion-safe gate, press feedback | MEDIUM | Easing & duration / Physicality | DONE |
 
 ## Recommended execution order & dependencies
 
@@ -225,3 +228,50 @@ headless Chromium against `/demo/decisions`, both themes, zero console errors:
   static and fully visible (no `backwards`-fill flash). Not committed per task
   scope; another agent concurrently edited app/page.tsx / decision-canvas.tsx /
   decision-flow.tsx (untouched here).
+
+### Audit 036 (full-repo motion audit, 2026-07-15 @ 91466cd)
+
+Eight-category sweep of `packages/ui/src` + `apps/web` after batches 001-035
+landed. One plan came out of it (**036**, independent, any time). Everything
+else the audit surfaced, with disposition, so future audits don't re-litigate:
+
+Flagged but **not planned** (real findings, deliberately left open):
+
+- `packages/ui/src/components/message-scroller.tsx:112` — the jump-to-end
+  button's hide transition uses a hand-typed ease-in curve
+  (`cubic-bezier(0.7,0,0.84,0)` = easeInExpo) at a raw `duration-400`, and the
+  same class string hand-types `cubic-bezier(0.23,1,0.32,1)` (verbatim
+  `--ease-out-quint`) and `duration-200` (= `--duration-base`). Only arbitrary
+  `ease-[...]` literals in the repo. MEDIUM; fix = exit to an ease-out token at
+  ≤200ms + tokenize all four literals.
+- `apps/web/components/dashboard/ask/ask-view.tsx` ReasoningBlock — the
+  "Thought process" body conditionally remounts and refires its `fade-in`
+  keyframe per toggle; a transition-based reveal would also animate the
+  collapse. LOW polish.
+
+Rejected — **conflicts with settled house posture** (do not re-flag):
+
+- Tab-panel content fade on `TabsContent` (`packages/ui/src/components/tabs.tsx:92`)
+  — Design.md §1 explicitly lists "a tab switch" in the 100+/day no-animation
+  tier; the sliding indicator (plan 009) is the sanctioned motion for tabs.
+- Strategies inspector fade on selection change
+  (`apps/web/components/dashboard/strategies-view.tsx:1188`) — plan 017's
+  documented non-goal: row-to-row selection swaps are high-frequency and stay
+  instant (`runs-view.tsx:104` records the same rule for runs).
+
+Rejected — **by design / canonical technique** (do not re-flag):
+
+- `accordion.tsx:64` `transition-[height]` — the Base UI accordion panel idiom
+  (`--accordion-panel-height`); height is the only property that encodes it.
+- `drawer.tsx:125` `transition-[transform,height,opacity,filter]` — standard
+  Base UI drawer resize idiom (`interpolate-size:allow-keywords`); plan 008
+  already scoped its `will-change`.
+- `.shimmer` animating `background-position` (`globals.css`) — unavoidable
+  with `background-clip: text`; tiny live-status text only, reduced-motion
+  clamped.
+- Runs filter-result swap teleport — documented as intentional at
+  `runs-view.tsx:104`.
+
+Reconciliation done with this audit: Status lines in plan files 014-021
+synced to this README (they still said TODO; all were shipped, 015 with its
+documented STOP branch).

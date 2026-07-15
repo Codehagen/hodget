@@ -1,6 +1,6 @@
 # 018 — Attribution mode toggle crossfade
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: LOW
 - **Category**: Missed opportunity

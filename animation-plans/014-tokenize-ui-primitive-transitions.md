@@ -1,6 +1,6 @@
 # 014 — Tokenize transitions on ui primitives (tabs, select, button, badge)
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: MEDIUM
 - **Category**: Cohesion & tokens

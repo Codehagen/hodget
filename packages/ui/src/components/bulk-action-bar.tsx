@@ -29,7 +29,7 @@ function BulkActionBar({
 
   return createPortal(
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-      <div className="animate-slide-up-fade pointer-events-auto flex items-center gap-2 rounded-none bg-primary py-2 pr-2 pl-4 text-primary-foreground shadow-lg">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-none bg-primary py-2 pr-2 pl-4 text-primary-foreground shadow-lg motion-safe:[animation:slide-up-fade_var(--duration-base)_var(--ease-out-quart)]">
         <span className="text-sm font-medium whitespace-nowrap">
           {label ?? `${count} selected`}
         </span>
@@ -38,7 +38,7 @@ function BulkActionBar({
           <button
             type="button"
             onClick={onDeselect}
-            className="rounded-none px-2.5 py-1.5 text-sm font-medium text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+            className="rounded-none px-2.5 py-1.5 text-sm font-medium text-primary-foreground/70 transition-[color,transform] duration-[var(--duration-fast)] ease-out-quad hover:text-primary-foreground active:translate-y-px"
           >
             Deselect
           </button>
@@ -57,7 +57,7 @@ function BulkActionButton({
     <button
       type="button"
       className={cn(
-        "rounded-none border border-primary-foreground/20 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10 disabled:pointer-events-none disabled:opacity-50",
+        "rounded-none border border-primary-foreground/20 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-out-quad hover:bg-primary-foreground/10 active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       {...props}

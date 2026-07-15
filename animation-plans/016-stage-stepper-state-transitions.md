@@ -1,6 +1,6 @@
 # 016 — Stage stepper transitions its state flips
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: MEDIUM
 - **Category**: Missed opportunity

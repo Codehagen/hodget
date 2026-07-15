@@ -17,7 +17,11 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Bubble, BubbleContent } from "@workspace/ui/components/bubble"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
-import { Marker, MarkerContent, MarkerIcon } from "@workspace/ui/components/marker"
+import {
+  Marker,
+  MarkerContent,
+  MarkerIcon,
+} from "@workspace/ui/components/marker"
 import {
   Message,
   MessageContent,
@@ -40,10 +44,7 @@ import {
 
 import { getRunDetail } from "../demo-data"
 import { SectionHeader } from "../primitives"
-import {
-  createDemoConversation,
-  type AskDataParts,
-} from "./demo-conversation"
+import { createDemoConversation, type AskDataParts } from "./demo-conversation"
 
 /**
  * "Ask the fund" — the conversational surface (plan 006). A scripted
@@ -96,7 +97,9 @@ function AskThread({
               <MessageScrollerContent className="gap-4 p-4">
                 <MessageScrollerItem>
                   <Marker variant="separator">
-                    <MarkerContent>Scripted conversation · Jul 13</MarkerContent>
+                    <MarkerContent>
+                      Scripted conversation · Jul 13
+                    </MarkerContent>
                   </Marker>
                 </MessageScrollerItem>
 
@@ -128,7 +131,9 @@ function AskThread({
                 {status === "submitted" ? (
                   <MessageScrollerItem>
                     <Marker>
-                      <MarkerContent className="shimmer">Thinking…</MarkerContent>
+                      <MarkerContent className="shimmer">
+                        Thinking…
+                      </MarkerContent>
                     </Marker>
                   </MessageScrollerItem>
                 ) : null}
@@ -160,7 +165,9 @@ function textOf(message: UIMessage): string {
 
 function UserTurn({ message }: { message: UIMessage }) {
   return (
-    <Message align="end">
+    // Turn entrances fade opacity only — a transform would fight the
+    // scroller's stick-to-bottom follow while the thread streams.
+    <Message align="end" className="motion-safe:animate-fade-in">
       <MessageContent>
         <Bubble align="end">
           <BubbleContent>{textOf(message)}</BubbleContent>
@@ -185,7 +192,7 @@ function AssistantTurn({
   basePath: string
 }) {
   return (
-    <Message>
+    <Message className="motion-safe:animate-fade-in">
       <MessageContent>
         <MessageHeader>Hodget</MessageHeader>
         {message.parts.map((part, i) => {
@@ -271,7 +278,7 @@ function ReasoningBlock({
   return (
     <div className="flex flex-col gap-1">
       {streaming ? (
-        <span className="shimmer w-fit text-[11px] text-muted-foreground">
+        <span className="w-fit shimmer text-[11px] text-muted-foreground">
           Thinking…
         </span>
       ) : (
@@ -290,7 +297,9 @@ function ReasoningBlock({
         </button>
       )}
       {expanded && text ? (
-        <p className="border-l border-border pl-2.5 text-xs/relaxed text-muted-foreground italic">
+        // Entry-only fade: the conditional render can't animate its exit, and
+        // a one-sided fade is proportionate for a quiet disclosure.
+        <p className="border-l border-border pl-2.5 text-xs/relaxed text-muted-foreground italic motion-safe:animate-fade-in">
           {text}
         </p>
       ) : null}
@@ -320,7 +329,10 @@ function RunArtifactCard({
   const rows = React.useMemo(() => {
     const equity = getRunDetail(data.runId)?.equity ?? []
     const first = equity[0]?.equity ?? 1
-    return equity.map((p) => ({ date: p.date, index: (p.equity / first) * 100 }))
+    return equity.map((p) => ({
+      date: p.date,
+      index: (p.equity / first) * 100,
+    }))
   }, [data.runId])
 
   return (
@@ -339,7 +351,10 @@ function RunArtifactCard({
         config={runCardChartConfig}
         className="h-20 w-full"
       >
-        <AreaChart data={rows} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+        <AreaChart
+          data={rows}
+          margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
+        >
           <XAxis dataKey="date" hide />
           {/* Tight domain: the rebased index moves a few points around 100, so
               an auto [0, max] domain would flatten the line into a block. */}

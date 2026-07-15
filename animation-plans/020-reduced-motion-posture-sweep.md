@@ -1,6 +1,6 @@
 # 020 — Reduced-motion posture sweep: drop motion-reduce on color-only transitions
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: LOW
 - **Category**: Cohesion

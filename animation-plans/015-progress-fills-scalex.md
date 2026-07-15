@@ -1,6 +1,6 @@
 # 015 — Progress fills animate scaleX, not width
 
-- **Status**: TODO
+- **Status**: DONE (run-progress half shipped; progress.tsx half STOPPED — Base UI Indicator exposes only inline width, no ratio for scaleX)
 - **Commit**: 2526020
 - **Severity**: MEDIUM
 - **Category**: Performance

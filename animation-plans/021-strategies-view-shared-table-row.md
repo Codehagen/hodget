@@ -1,6 +1,6 @@
 # 021 — Converge strategies-view rows onto the shared TableRow treatment
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: LOW
 - **Category**: Cohesion

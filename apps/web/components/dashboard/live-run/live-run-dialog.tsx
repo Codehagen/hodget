@@ -102,7 +102,10 @@ function Idle({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs/relaxed text-muted-foreground">
-        Launches the <span className="text-foreground">{strategyName ?? "earnings-drift"}</span>{" "}
+        Launches the{" "}
+        <span className="text-foreground">
+          {strategyName ?? "earnings-drift"}
+        </span>{" "}
         panel over 60 trading days of the bundled dataset: each decision day the
         analysts emit signals with written theses, the committee blends them
         into target weights, the risk gate clips or vetoes, and fills settle
@@ -141,11 +144,13 @@ function Replay({
   } | null
   onRestart: () => void
 }) {
-  const badge = STATUS_BADGE[state.status as Exclude<SimulatedRunStatus, "idle">]
+  const badge =
+    STATUS_BADGE[state.status as Exclude<SimulatedRunStatus, "idle">]
   const done = state.status === "completed"
 
   return (
-    <div className="flex flex-col gap-3">
+    // Fades in over the Idle panel it replaces inside the already-open dialog.
+    <div className="flex flex-col gap-3 motion-safe:animate-fade-in">
       {/* Status strip */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Badge variant={badge.variant}>{badge.label}</Badge>
@@ -159,7 +164,9 @@ function Replay({
             : ""}
         </span>
       </div>
-      <Progress value={state.totalDays ? (state.day / state.totalDays) * 100 : 0} />
+      <Progress
+        value={state.totalDays ? (state.day / state.totalDays) * 100 : 0}
+      />
 
       {/* Event feed — pins to the newest entry while the replay streams in;
           scrolling up releases the pin and surfaces the jump-to-end button. */}
@@ -178,9 +185,10 @@ function Replay({
         </MessageScroller>
       </MessageScrollerProvider>
 
-      {/* Result */}
+      {/* Result — the payoff of the replay, so it earns the page-length
+          entrance; opacity+transform only, and motion-safe gates it. */}
       {done && metrics ? (
-        <>
+        <div className="flex flex-col gap-3 motion-safe:animate-slide-up-fade">
           <StatBar>
             {/* min-w tightened from the default 9rem so all four fit one row
                 inside the dialog's width instead of orphaning the last cell. */}
@@ -220,7 +228,7 @@ function Replay({
               View full run →
             </Button>
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   )
@@ -273,8 +281,11 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
     case "committee":
       return (
         <p className="text-muted-foreground">
-          <span className="text-foreground">{entry.security}</span> committee net{" "}
-          <span className="tabular-nums">{formatSignedNumber(entry.netView)}</span>{" "}
+          <span className="text-foreground">{entry.security}</span> committee
+          net{" "}
+          <span className="tabular-nums">
+            {formatSignedNumber(entry.netView)}
+          </span>{" "}
           → target{" "}
           <span className="tabular-nums">
             {formatSignedPercent(entry.targetWeight, 1)}
@@ -292,7 +303,9 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
       return (
         <p className="text-muted-foreground">
           <span
-            className={entry.side === "buy" ? "text-success" : "text-destructive"}
+            className={
+              entry.side === "buy" ? "text-success" : "text-destructive"
+            }
           >
             {entry.side.toUpperCase()}
           </span>{" "}

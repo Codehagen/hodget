@@ -1,6 +1,6 @@
 # 019 — Attention panel rows get house focus-visible treatment
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: LOW
 - **Category**: Accessibility

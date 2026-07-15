@@ -1,6 +1,6 @@
 # 017 — Runs inspector entrance fade
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 2526020
 - **Severity**: MEDIUM
 - **Category**: Missed opportunity
