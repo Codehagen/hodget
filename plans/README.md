@@ -25,7 +25,7 @@ commit `67eb565` (2026-07-15 advisor audit).
 | 011 | [Run-stream correctness: SSE terminal fallback + workflow-id persist](./011-run-stream-correctness.md) | Bug | M | LOW/MED | DONE |
 | 012 | [Component-test foundation: jsdom harness, simulated-run tests, ui test script](./012-web-test-foundation.md) | Tests | M | LOW | DONE |
 | 013 | [Playwright E2E smoke: public surfaces + auth redirect](./013-e2e-smoke.md) | Tests | M | LOW | DONE |
-| 014 | [CI Turbo cache, pre-commit hooks, env docs, real AGENTS.md](./014-ci-and-dx-loops.md) | DX | S | LOW | TODO |
+| 014 | [CI Turbo cache, pre-commit hooks, env docs, real AGENTS.md](./014-ci-and-dx-loops.md) | DX | S | LOW | DONE |
 | 015 | [Resolve the three unowned frontend dependency decisions](./015-frontend-dependency-decisions.md) | Tech debt | S | LOW | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |

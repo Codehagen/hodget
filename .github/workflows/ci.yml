@@ -18,6 +18,16 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      # Persist Turbo's task cache between runs: each run restores the most
+      # recent cache (restore-keys prefix) and saves under its own sha, so
+      # unchanged packages skip their typecheck/lint/build work entirely.
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck

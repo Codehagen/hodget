@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import { Marker, MarkerContent, markerVariants } from "./marker"
+import { Marker, MarkerContent, markerVariants } from "./marker.js"
 
 /**
  * First test in the shared UI package (plan 012): marker carries real logic

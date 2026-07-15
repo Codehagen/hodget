@@ -67,6 +67,10 @@ Set these in `apps/web/.env.local`.
 | `DATABASE_URL` | Supabase → Project Settings → Database (session pooler URI) |
 | `BETTER_AUTH_SECRET` | Generate one: `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | `http://localhost:3000` in development |
+| `ANTHROPIC_API_KEY` | console.anthropic.com — only needed for runs whose panel includes an LLM analyst |
+| `HODGET_LLM_MODEL` | Optional model override for LLM analysts (defaults in `packages/engine`) |
+| `RUN_EXECUTION` | Set to `inline` to execute runs in-process instead of the durable workflow (local dev/tests) |
+| `NEXT_PUBLIC_APP_URL` | Absolute origin for canonical/OG metadata; defaults to the production domain |
 
 ## Database
 

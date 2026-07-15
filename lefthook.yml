@@ -1,0 +1,10 @@
+# Pre-commit gate (plan 014): the same checks CI runs first, so a red gate
+# never reaches CI. Whole-repo lint+typecheck stay fast because Turbo's task
+# cache skips unchanged packages.
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      run: pnpm lint
+    typecheck:
+      run: pnpm typecheck
