@@ -43,7 +43,16 @@ function MessageScrollerViewport({
     <MessageScrollerPrimitive.Viewport
       data-slot="message-scroller-viewport"
       className={cn(
-        "size-full min-h-0 min-w-0 scroll-fade-b scrollbar-thin scrollbar-gutter-stable overflow-y-auto overscroll-contain contain-content data-autoscrolling:scrollbar-thumb-transparent data-autoscrolling:scrollbar-track-transparent",
+        // Always-visible scrollbar (a deliberate departure from the upstream
+        // hide-while-following): on macOS the standard scrollbar-width/color
+        // properties only style the auto-hiding overlay scrollbar, so the thumb
+        // never shows while the feed streams. ::-webkit-scrollbar pseudos force
+        // a persistent painted scrollbar in Chromium/Safari — but Chromium
+        // ignores them if scrollbar-width is also set, so the standard
+        // properties apply only where the pseudos don't exist (Firefox).
+        "size-full min-h-0 min-w-0 scroll-fade-b scrollbar-gutter-stable overflow-y-auto overscroll-contain contain-content",
+        "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/60 [&::-webkit-scrollbar-track]:bg-transparent",
+        "[@supports_not_selector(::-webkit-scrollbar)]:scrollbar-thin [@supports_not_selector(::-webkit-scrollbar)]:scrollbar-thumb-muted-foreground/35 [@supports_not_selector(::-webkit-scrollbar)]:scrollbar-track-transparent",
         className
       )}
       {...props}
