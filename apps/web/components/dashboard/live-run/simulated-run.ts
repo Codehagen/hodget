@@ -60,7 +60,7 @@ export interface SimulatedRunState {
 }
 
 /** One timed step: wait `delay` ms, then fold the patch into the state. */
-type ScriptStep = {
+export type ScriptStep = {
   delay: number
   patch: (state: SimulatedRunState) => SimulatedRunState
 }
@@ -138,7 +138,9 @@ function decisionSteps(security: SecurityDecision): ScriptStep[] {
  * decision dates come from different mock clocks, so the sweep shows only the
  * day counter and equity, and each decision block carries its own date.
  */
-function buildScript(detail: RunDetail): ScriptStep[] {
+/* Exported for tests (plan 012): the script builder is pure and the tests
+ * assert its sequencing without driving timers. */
+export function buildScript(detail: RunDetail): ScriptStep[] {
   const totalDays = detail.equity.length
   const decisionDays = detail.decisions
   // Sweep day (1-based) at which each decision day plays back.

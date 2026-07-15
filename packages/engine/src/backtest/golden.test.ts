@@ -113,7 +113,9 @@ describe("golden backtest — earnings-drift quant", () => {
     expect(a.trades.length).toBeGreaterThan(0)
 
     await assertGolden("earnings-drift", snapshotOf(a))
-  })
+    // 30s: two full backtests run here; under a CPU-contended parallel turbo
+    // run (every package's suite at once) the 5s default flakes.
+  }, 30_000)
 })
 
 describe("golden backtest — value persona (scripted LLM)", () => {
@@ -142,5 +144,6 @@ describe("golden backtest — value persona (scripted LLM)", () => {
     expect(a.trades.some((t) => t.fill.currency === "NOK")).toBe(true)
 
     await assertGolden("value-persona", snapshotOf(a))
-  })
+    // Same contention headroom as the quant golden above.
+  }, 30_000)
 })
