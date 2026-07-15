@@ -24,6 +24,9 @@ export default defineConfig({
     // Route-handler tests run without a workflow runtime: force the in-process
     // (inline) execution path so any unmocked startRun stays process-local.
     env: { RUN_EXECUTION: "inline" },
+    // run-workflow.test.ts executes a real backtest over pglite; on CI's
+    // contended 2-core runners the 5s default flakes. Headroom, not an SLA.
+    testTimeout: 30_000,
   },
   resolve: {
     alias: {
