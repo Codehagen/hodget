@@ -88,6 +88,21 @@ statically like the rest of the demo.
 6. Verify: typecheck, tests, static production build, browser click-through
    of all three exchanges on `/demo/ask`.
 
+## Addendum (same session): thinking + artifacts, renamed "Ask Hodget"
+
+- **Renamed** to "Ask Hodget" (nav item, page title, metadata).
+- **Thinking**: every assistant turn opens with a `reasoning` part
+  (`writer.reasoning`). It renders live while streaming (shimmer "Thinking…"
+  plus the text as it arrives) and collapses to a quiet "Thought process"
+  toggle once done — answers lead with the conclusion, not the deliberation.
+- **Artifacts**: a fourth exchange ("How has this strategy performed?")
+  carries a typed `run_card` data part (`writer.data`). The view renders it
+  as an inline artifact card: the run's equity curve (resolved from fixtures
+  by run id, rebased to 100, on the Design.md §7 recharts contract), realized
+  metrics, and a link to the full run page. The card cites the same
+  `run_8c41ca` the simulated live run replays, so both surfaces tell one
+  story.
+
 ## Later (out of scope)
 
 - **Live mode**: an `/api/ask` route on the AI SDK (AI Gateway) replacing

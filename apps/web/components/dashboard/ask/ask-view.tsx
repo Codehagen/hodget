@@ -5,10 +5,13 @@ import Link from "next/link"
 import { useChat } from "@ai-sdk/react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  ArrowDown01Icon,
+  ArrowRight01Icon,
   BookOpen01Icon,
   SentIcon,
 } from "@hugeicons/core-free-icons"
 import type { UIMessage } from "ai"
+import { Area, AreaChart, XAxis, YAxis } from "recharts"
 
 import { Badge } from "@workspace/ui/components/badge"
 import { Bubble, BubbleContent } from "@workspace/ui/components/bubble"
@@ -28,9 +31,19 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@workspace/ui/components/message-scroller"
+import {
+  ChartContainer,
+  chartAnimationProps,
+  useChartAnimation,
+  type ChartConfig,
+} from "@workspace/ui/components/chart"
 
+import { getRunDetail } from "../demo-data"
 import { SectionHeader } from "../primitives"
-import { createDemoConversation } from "./demo-conversation"
+import {
+  createDemoConversation,
+  type AskDataParts,
+} from "./demo-conversation"
 
 /**
  * "Ask the fund" — the conversational surface (plan 006). A scripted
@@ -71,7 +84,7 @@ function AskThread({
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <SectionHeader
-        title="Ask the fund"
+        title="Ask Hodget"
         description="Plain-language answers about why the fund acted, grounded in the decision ledger."
         actions={<Badge variant="amber">Simulated — mock data</Badge>}
       />
@@ -106,7 +119,7 @@ function AskThread({
                       {message.role === "user" ? (
                         <UserTurn message={message} />
                       ) : (
-                        <AssistantTurn message={message} />
+                        <AssistantTurn message={message} basePath={basePath} />
                       )}
                     </MessageScrollerItem>
                   ))
@@ -158,21 +171,47 @@ function UserTurn({ message }: { message: UIMessage }) {
 }
 
 /**
- * Assistant turns render part-by-part: tool activity as marker rows (shimmer
- * while running, a compact ledger line once resolved), text as a ghost bubble
- * so answers read as content rather than balloons.
+ * Assistant turns render part-by-part: reasoning as a collapsible thinking
+ * block (live while streaming), tool activity as marker rows (shimmer while
+ * running, a compact ledger line once resolved), data parts as inline
+ * artifact cards, and text as a ghost bubble so answers read as content
+ * rather than balloons.
  */
-function AssistantTurn({ message }: { message: UIMessage }) {
+function AssistantTurn({
+  message,
+  basePath,
+}: {
+  message: UIMessage
+  basePath: string
+}) {
   return (
     <Message>
       <MessageContent>
-        <MessageHeader>Hodget committee</MessageHeader>
+        <MessageHeader>Hodget</MessageHeader>
         {message.parts.map((part, i) => {
           if (part.type === "text") {
             return (
               <Bubble key={i} variant="ghost">
                 <BubbleContent>{part.text}</BubbleContent>
               </Bubble>
+            )
+          }
+          if (part.type === "reasoning") {
+            return (
+              <ReasoningBlock
+                key={i}
+                text={part.text}
+                streaming={part.state === "streaming"}
+              />
+            )
+          }
+          if (part.type === "data-run_card") {
+            return (
+              <RunArtifactCard
+                key={i}
+                data={part.data as AskDataParts["run_card"]}
+                basePath={basePath}
+              />
             )
           }
           if (part.type === "tool-lookup_decision") {
@@ -211,6 +250,138 @@ function AssistantTurn({ message }: { message: UIMessage }) {
         })}
       </MessageContent>
     </Message>
+  )
+}
+
+/**
+ * A reasoning part — the committee's visible thinking. Streams live (shimmer
+ * label + text as it arrives), then collapses to a quiet toggle so finished
+ * answers lead with the conclusion, not the deliberation.
+ */
+function ReasoningBlock({
+  text,
+  streaming,
+}: {
+  text: string
+  streaming: boolean
+}) {
+  const [open, setOpen] = React.useState(false)
+  const expanded = streaming || open
+
+  return (
+    <div className="flex flex-col gap-1">
+      {streaming ? (
+        <span className="shimmer w-fit text-[11px] text-muted-foreground">
+          Thinking…
+        </span>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex w-fit items-center gap-1 text-[11px] text-muted-foreground transition-colors duration-[var(--duration-instant)] hover:text-foreground"
+        >
+          <HugeiconsIcon
+            icon={open ? ArrowDown01Icon : ArrowRight01Icon}
+            size={12}
+            strokeWidth={2}
+          />
+          Thought process
+        </button>
+      )}
+      {expanded && text ? (
+        <p className="border-l border-border pl-2.5 text-xs/relaxed text-muted-foreground italic">
+          {text}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+const runCardChartConfig = {
+  index: { label: "Equity (indexed)", color: "var(--chart-5)" },
+} satisfies ChartConfig
+
+/**
+ * Inline artifact card for a `run_card` data part: the run's equity curve
+ * (resolved from the fixtures by run id, rebased to 100) over its realized
+ * metrics, linking to the full run page. Follows the recharts contract
+ * (Design.md §7): series take `isAnimationActive` from useChartAnimation and
+ * the chart root is keyed on the same value.
+ */
+function RunArtifactCard({
+  data,
+  basePath,
+}: {
+  data: AskDataParts["run_card"]
+  basePath: string
+}) {
+  const isAnimationActive = useChartAnimation()
+  const rows = React.useMemo(() => {
+    const equity = getRunDetail(data.runId)?.equity ?? []
+    const first = equity[0]?.equity ?? 1
+    return equity.map((p) => ({ date: p.date, index: (p.equity / first) * 100 }))
+  }, [data.runId])
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-3 rounded-none bg-background p-3 ring-1 ring-foreground/10">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">
+          {data.strategy}
+        </span>
+        <span className="font-mono text-[11px] text-muted-foreground">
+          {data.runId} · backtest
+        </span>
+      </div>
+
+      <ChartContainer
+        key={isAnimationActive ? "animated" : "static"}
+        config={runCardChartConfig}
+        className="h-20 w-full"
+      >
+        <AreaChart data={rows} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+          <XAxis dataKey="date" hide />
+          {/* Tight domain: the rebased index moves a few points around 100, so
+              an auto [0, max] domain would flatten the line into a block. */}
+          <YAxis hide domain={["dataMin - 0.5", "dataMax + 0.5"]} />
+          <Area
+            dataKey="index"
+            type="monotone"
+            stroke="var(--color-index)"
+            fill="var(--color-index)"
+            fillOpacity={0.08}
+            strokeWidth={1.5}
+            isAnimationActive={isAnimationActive}
+            {...chartAnimationProps}
+          />
+        </AreaChart>
+      </ChartContainer>
+
+      <dl className="grid grid-cols-4 gap-2">
+        {(
+          [
+            ["Sharpe", data.sharpe.toFixed(2)],
+            ["CAGR", `+${data.cagrPct.toFixed(1)}%`],
+            ["Max DD", `${data.maxDrawdownPct.toFixed(1)}%`],
+            ["Hit rate", `${data.hitRatePct.toFixed(0)}%`],
+          ] as const
+        ).map(([label, value]) => (
+          <div key={label} className="flex flex-col gap-0.5">
+            <dt className="text-[10px] text-muted-foreground">{label}</dt>
+            <dd className="font-mono text-xs font-semibold text-foreground tabular-nums">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <Link
+        href={`${basePath}/runs/${data.runId}`}
+        className="w-fit text-[11px] text-muted-foreground underline underline-offset-2 transition-colors duration-[var(--duration-instant)] hover:text-foreground"
+      >
+        Open the full run →
+      </Link>
+    </div>
   )
 }
 

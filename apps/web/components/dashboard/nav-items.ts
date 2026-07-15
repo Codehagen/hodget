@@ -39,7 +39,7 @@ export const NAV_GROUPS = [
         icon: DashboardSquare01Icon,
         exact: true,
       },
-      { title: "Ask", href: "/ask", icon: BubbleChatIcon },
+      { title: "Ask Hodget", href: "/ask", icon: BubbleChatIcon },
     ],
   },
   {
