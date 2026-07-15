@@ -13,6 +13,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@workspace/ui/components/message-scroller"
+import { Marker, MarkerContent } from "@workspace/ui/components/marker"
 import {
   Dialog,
   DialogContent,
@@ -235,13 +236,19 @@ const GATE_TONE: Record<string, string> = {
 function FeedRow({ entry }: { entry: FeedEntry }) {
   switch (entry.kind) {
     case "lifecycle":
-      return <p className="text-muted-foreground">— {entry.text}</p>
+      return (
+        <Marker>
+          <MarkerContent>{entry.text}</MarkerContent>
+        </Marker>
+      )
     case "day":
       return (
-        <p className="mt-1.5 border-t border-border pt-1.5 font-semibold text-foreground first:mt-0 first:border-t-0 first:pt-0">
-          {entry.date} · repricing {entry.securities}{" "}
-          {entry.securities === 1 ? "security" : "securities"}
-        </p>
+        <Marker variant="separator" className="mt-1.5 first:mt-0">
+          <MarkerContent className="font-semibold text-foreground">
+            {entry.date} · repricing {entry.securities}{" "}
+            {entry.securities === 1 ? "security" : "securities"}
+          </MarkerContent>
+        </Marker>
       )
     case "signal":
       return (
