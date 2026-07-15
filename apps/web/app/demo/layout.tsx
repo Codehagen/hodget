@@ -35,7 +35,7 @@ export default function DemoLayout({
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" />
+          <Separator orientation="vertical" className="h-4 self-center" />
           <Badge variant="amber" className="gap-1.5">
             Demo — mock data
           </Badge>
