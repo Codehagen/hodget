@@ -15,6 +15,7 @@ import {
 } from "@workspace/ui/components/select"
 
 import type { DashboardData } from "./demo-data"
+import { LiveRunDialog } from "./live-run/live-run-dialog"
 import { StatusStrip } from "./overview-stats"
 import { AttentionPanel } from "./fund-monitor/attention-panel"
 import { EngineOpsCard } from "./fund-monitor/engine-ops-card"
@@ -94,10 +95,15 @@ export function DashboardView({
           <Button variant="outline" size="icon" aria-label="Refresh">
             <HugeiconsIcon icon={Refresh01Icon} size={16} />
           </Button>
-          <Button>
-            <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />
-            New run
-          </Button>
+          <LiveRunDialog
+            basePath={basePath}
+            trigger={
+              <Button>
+                <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />
+                New run
+              </Button>
+            }
+          />
         </div>
       </div>
 

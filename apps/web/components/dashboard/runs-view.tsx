@@ -23,6 +23,7 @@ import {
 } from "@workspace/ui/components/master-detail"
 
 import { RUN_HISTORY, RUN_HISTORY_TOTAL } from "./demo-data"
+import { LiveRunDialog } from "./live-run/live-run-dialog"
 import { SectionHeader } from "./primitives"
 import { RunsSummary } from "./runs/runs-summary"
 import {
@@ -153,10 +154,15 @@ export function RunsView({ basePath }: { basePath: string }) {
         title="Runs"
         description="Every engine cycle — backtests and paper runs across all strategies."
         actions={
-          <Button>
-            <HugeiconsIcon icon={PlusSignIcon} size={15} strokeWidth={2} />
-            New run
-          </Button>
+          <LiveRunDialog
+            basePath={basePath}
+            trigger={
+              <Button>
+                <HugeiconsIcon icon={PlusSignIcon} size={15} strokeWidth={2} />
+                New run
+              </Button>
+            }
+          />
         }
       />
 
