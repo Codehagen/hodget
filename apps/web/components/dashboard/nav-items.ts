@@ -2,6 +2,7 @@ import { type ComponentProps } from "react"
 import { type HugeiconsIcon } from "@hugeicons/react"
 import {
   AiBrain01Icon,
+  BubbleChatIcon,
   DashboardSquare01Icon,
   Database01Icon,
   Flowchart01Icon,
@@ -38,6 +39,7 @@ export const NAV_GROUPS = [
         icon: DashboardSquare01Icon,
         exact: true,
       },
+      { title: "Ask", href: "/ask", icon: BubbleChatIcon },
     ],
   },
   {
