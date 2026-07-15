@@ -10,7 +10,6 @@ import {
   Clock01Icon,
   Edit02Icon,
   InformationCircleIcon,
-  LinkSquare02Icon,
   MoreVerticalIcon,
   PlayIcon,
   Search01Icon,
@@ -22,7 +21,6 @@ import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import {
   Card,
-  CardAction,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"

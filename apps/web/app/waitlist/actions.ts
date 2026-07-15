@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { insertWaitlistEmail } from "@/lib/dal/waitlist"
 
 /**
  * The waitlist form's server-action result. `idle` is the initial state; a
@@ -53,20 +53,18 @@ export async function joinWaitlist(
   }
 
   try {
-    const supabase = await createClient()
-    const { error } = await supabase.from("waitlist").insert({ email, source })
-
-    if (error) {
-      // 23505 = unique_violation → already signed up. Same outcome for the
-      // user (they're on the list), so treat it as success and don't leak
-      // whether an address is already registered.
-      if (error.code === "23505") {
-        return { status: "success", message: "You're already on the list." }
-      }
+    const result = await insertWaitlistEmail(email, source)
+    if (!result.ok) {
       return { status: "error", message: GENERIC_ERROR }
     }
-
-    return { status: "success", message: "You're on the list." }
+    // A duplicate means the same outcome for the user (they're on the list),
+    // and the shared phrasing avoids leaking whether an address is registered.
+    return {
+      status: "success",
+      message: result.duplicate
+        ? "You're already on the list."
+        : "You're on the list.",
+    }
   } catch {
     return { status: "error", message: GENERIC_ERROR }
   }

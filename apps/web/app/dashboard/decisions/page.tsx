@@ -8,7 +8,7 @@ import { DecisionsView } from "@/components/dashboard/decision-map/decisions-vie
 export default function DashboardDecisionsPage() {
   return (
     <Suspense>
-      <DecisionsView basePath="/dashboard" />
+      <DecisionsView />
     </Suspense>
   )
 }

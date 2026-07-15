@@ -304,7 +304,7 @@ const OUTCOME_LABELS: Record<OutcomeFilter, string> = {
  * the stagger on first mount only and suppress it on every later swap — tracked
  * by `suppressEntrance`, surfaced as `data-entrance` for decisions-view.css.
  */
-export function DecisionsView(_props: { basePath: string }) {
+export function DecisionsView() {
   const [decisionId, setDecisionId] = useQueryState(
     "d",
     parseAsString.withDefault(DEFAULT_TODAY_ID)
@@ -338,24 +338,22 @@ export function DecisionsView(_props: { basePath: string }) {
     analystNodeId(map.primaryAnalystId)
   )
   const [railAdvisorId, setRailAdvisorId] = React.useState(map.primaryAnalystId)
-  const renderedIdRef = React.useRef(map.id)
-  if (renderedIdRef.current !== map.id) {
-    renderedIdRef.current = map.id
+  const [renderedId, setRenderedId] = React.useState(map.id)
+  if (renderedId !== map.id) {
+    setRenderedId(map.id)
     if (!suppressEntrance) setSuppressEntrance(true)
     setSelectedId(analystNodeId(map.primaryAnalystId))
     setRailAdvisorId(map.primaryAnalystId)
   }
 
-  const handleSelectedIdChange = React.useCallback(
-    (id: string | null) => {
-      setSelectedId(id)
-      const advisor = map.analysts.find(
-        (a) => analystNodeId(a.analystId) === id
-      )
-      if (advisor) setRailAdvisorId(advisor.analystId)
-    },
-    [map]
-  )
+  // No manual useCallback: the React Compiler memoizes this itself, and the
+  // adjust-state-during-render block above defeats its ability to preserve a
+  // hand-written memo (react-hooks/preserve-manual-memoization).
+  const handleSelectedIdChange = (id: string | null) => {
+    setSelectedId(id)
+    const advisor = map.analysts.find((a) => analystNodeId(a.analystId) === id)
+    if (advisor) setRailAdvisorId(advisor.analystId)
+  }
 
   const railAdvisor =
     map.analysts.find((a) => a.analystId === railAdvisorId) ??

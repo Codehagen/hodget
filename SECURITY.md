@@ -5,7 +5,7 @@
 Please do not open a public issue for security vulnerabilities.
 
 Report them privately through
-[GitHub Security Advisories](https://github.com/<your-org>/hodget/security/advisories/new),
+[GitHub Security Advisories](https://github.com/Codehagen/hodget/security/advisories/new),
 or by email to <security@hodget.com>.
 
 Include what you found, how to reproduce it, and what an attacker could do with

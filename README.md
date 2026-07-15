@@ -47,7 +47,7 @@ moves money directly.
 Requires Node ≥20 and pnpm 10.
 
 ```bash
-git clone https://github.com/<your-org>/hodget.git
+git clone https://github.com/Codehagen/hodget.git
 cd hodget
 pnpm install
 cp apps/web/.env.example apps/web/.env.local   # then fill it in, see below
@@ -95,6 +95,8 @@ Run `db:types` after every schema change.
 
 ```
 apps/web                     Next.js app: routes, auth, Supabase clients
+packages/engine              The fund engine: analysts, committee, portfolio, risk, backtesting, paper broker
+packages/db                  Engine persistence: Postgres schema, queries, the run executor
 packages/ui                  Shared shadcn/ui components
 packages/eslint-config
 packages/typescript-config
