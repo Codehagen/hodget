@@ -19,7 +19,7 @@ commit `67eb565` (2026-07-15 advisor audit).
 | 005 | [A simulated live run on the public demo](./005-live-demo-runs.md) | Product / Demo | M | Low | DONE — shipped in `5839f65`..`67eb565` |
 | 006 | ["Ask the fund": a scripted conversational surface](./006-ask-the-fund-chat.md) | Product / Demo | M | Low | DONE — shipped as "Ask Hodget" in `56c03cf`..`5da337f` |
 | 007 | [Make `pnpm lint` pass on main + fix stale front-door docs](./007-green-the-lint-gate.md) | DX / Security | S | LOW | DONE |
-| 008 | [Preserve the original error and evict poisoned connections in `transaction()`](./008-transaction-rollback-integrity.md) | Bug | S | LOW | TODO |
+| 008 | [Preserve the original error and evict poisoned connections in `transaction()`](./008-transaction-rollback-integrity.md) | Bug | S | LOW | DONE |
 | 009 | [Harden the public surfaces: waitlist RLS + rate limit, schema caps, security headers](./009-harden-public-surfaces.md) | Security | M | LOW/MED | TODO |
 | 010 | [Code-split the heavy viz libraries; server-ify DashboardView](./010-code-split-heavy-viz.md) | Perf | M | LOW/MED | TODO |
 | 011 | [Run-stream correctness: SSE terminal fallback + workflow-id persist](./011-run-stream-correctness.md) | Bug | M | LOW/MED | TODO |

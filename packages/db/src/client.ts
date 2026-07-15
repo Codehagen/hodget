@@ -64,16 +64,35 @@ export function createPgSql(connectionString?: string): PgSql {
     },
     async transaction(fn) {
       const client = await pool.connect()
+      let failed: unknown
       try {
         await client.query("BEGIN")
         const value = await fn(clientSql(client))
         await client.query("COMMIT")
         return value
       } catch (error) {
-        await client.query("ROLLBACK")
+        // ROLLBACK on a broken connection can itself reject; the caller must
+        // see the ORIGINAL failure, so the rollback error is swallowed
+        // deliberately (eviction below discards the connection either way).
+        try {
+          await client.query("ROLLBACK")
+        } catch {
+          // Connection is unusable; release(err) below destroys it.
+        }
+        failed = error
         throw error
       } finally {
-        client.release()
+        // release(err) destroys the connection instead of pooling it — a
+        // client that failed mid-transaction must not serve the next query.
+        // On the success path `failed` is undefined and this is a normal
+        // release back to the pool.
+        client.release(
+          failed === undefined
+            ? undefined
+            : failed instanceof Error
+              ? failed
+              : new Error(String(failed)),
+        )
       }
     },
     end: () => pool.end(),
