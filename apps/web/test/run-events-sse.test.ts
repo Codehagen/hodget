@@ -130,3 +130,49 @@ describe("terminalEventForRun", () => {
     expect(terminalEventForRun({ id: "r1", status: "running" } as never)).toBeNull()
   })
 })
+
+/** A ReadableStream that emits the given events then errors. Pull-based so
+ * each event is actually delivered before the error (error() inside start()
+ * would discard queued chunks per the Streams spec). */
+function erroringSourceOf(events: RunEvent[]): ReadableStream<RunEvent> {
+  let i = 0
+  return new ReadableStream<RunEvent>({
+    pull(controller) {
+      if (i < events.length) {
+        controller.enqueue(events[i++]!)
+        return
+      }
+      controller.error(new Error("durable stream broke"))
+    },
+  })
+}
+
+describe("sseFromRunEvents — mid-stream errors (plan 011)", () => {
+  it("falls back to the persisted terminal on a read error", async () => {
+    const progress: RunEvent = { type: "progress", runId: "r1", asOf: "d", day: 1 }
+    const terminal: RunEvent = { type: "completed", runId: "r1", at: "t9" }
+    const text = await drain(
+      sseFromRunEvents(erroringSourceOf([progress]), {
+        onEndWithoutTerminal: () => terminal,
+      })
+    )
+    expect(frames(text)).toEqual([progress, terminal])
+  })
+
+  it("errors the stream when the run is not terminal yet (null fallback)", async () => {
+    const stream = sseFromRunEvents(erroringSourceOf([]), {
+      onEndWithoutTerminal: () => null,
+    })
+    await expect(drain(stream)).rejects.toThrow("durable stream broke")
+  })
+
+  it("never double-emits a terminal seen before the error", async () => {
+    const terminal: RunEvent = { type: "completed", runId: "r1", at: "t9" }
+    const text = await drain(
+      sseFromRunEvents(erroringSourceOf([terminal]), {
+        onEndWithoutTerminal: () => terminal,
+      })
+    )
+    expect(frames(text)).toEqual([terminal])
+  })
+})

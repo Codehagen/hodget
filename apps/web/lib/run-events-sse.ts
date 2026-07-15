@@ -70,10 +70,36 @@ export function sseFromRunEvents(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(value)}\n\n`))
         if (isTerminal(value)) {
           sawTerminal = true
-          await reader.cancel()
+          // The terminal frame is already delivered; if the upstream broke in
+          // the meantime (streams pre-pull, so cancel can surface that error)
+          // it no longer matters — never let it error the closed response.
+          try {
+            await reader.cancel()
+          } catch {
+            // Upstream already errored after the terminal; nothing to release.
+          }
           controller.close()
         }
       } catch (error) {
+        // A durable-stream read error must not strand the client without a
+        // terminal frame: fall back to the run's persisted status, exactly
+        // like the clean end-of-stream path. A null fallback (run not
+        // terminal yet) still errors the stream — EventSource auto-reconnect
+        // then re-attaches, which is right for a transient mid-run failure.
+        if (!sawTerminal) {
+          try {
+            const fallback = await options.onEndWithoutTerminal?.()
+            if (fallback) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(fallback)}\n\n`),
+              )
+              controller.close()
+              return
+            }
+          } catch {
+            // Fall through to controller.error below.
+          }
+        }
         controller.error(error)
       }
     },

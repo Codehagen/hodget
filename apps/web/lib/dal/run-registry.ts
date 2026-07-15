@@ -5,6 +5,7 @@ import {
   createRunEmitter,
   executeRun,
   RunRegistry,
+  setRunStatus,
   setRunWorkflowId,
   type EngineRun,
 } from "@workspace/db"
@@ -53,5 +54,25 @@ export async function startRun(run: EngineRun): Promise<void> {
     return
   }
   const { runId } = await start(executeRunWorkflow, [run.id])
-  await setRunWorkflowId(getDb(), run.id, runId)
+  try {
+    await setRunWorkflowId(getDb(), run.id, runId)
+  } catch (error) {
+    // The workflow is already enqueued; without workflow_run_id the run's
+    // durable stream is unreachable, and letting this throw would 500 the
+    // POST and invite a duplicate-run retry. One retry, then mark the run
+    // failed so it is never silently unobservable. The executor still
+    // transitions the run when it finishes — a failed → completed overwrite
+    // is acceptable and self-healing.
+    try {
+      await setRunWorkflowId(getDb(), run.id, runId)
+    } catch {
+      await setRunStatus(getDb(), run.id, {
+        status: "failed",
+        error:
+          "failed to record workflow id; run execution may proceed unobserved",
+        completedAt: new Date().toISOString(),
+      })
+      throw error
+    }
+  }
 }
