@@ -46,6 +46,13 @@ export type FeedEntry =
       session: string
     }
   | { kind: "no-order"; security: string }
+  // Real-run kinds (plan 005 seam). The live engine stream (`RunEvent`) is
+  // coarser than this scripted feed — it carries only lifecycle, per-day
+  // progress, and per-analyst activity; the rich committee/gate/fill detail is
+  // persisted and only shows on the completed run's detail page. `useRealRun`
+  // emits these two; the script never does.
+  | { kind: "day-tick"; date: string; day: number }
+  | { kind: "analyst"; security: string; analystId: string }
 
 export type SimulatedRunStatus = "idle" | "queued" | "running" | "completed"
 

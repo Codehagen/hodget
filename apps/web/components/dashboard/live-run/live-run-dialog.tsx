@@ -32,36 +32,153 @@ import {
   formatSignedNumber,
   formatSignedPercent,
 } from "../format"
-import {
-  SIMULATED_RUN_ID,
-  useSimulatedRun,
-  type FeedEntry,
-  type SimulatedRunStatus,
-} from "./simulated-run"
+import { SIMULATED_RUN_ID, useSimulatedRun, type FeedEntry } from "./simulated-run"
+import { useRealRun } from "./real-run"
+import type { RunDialogState, RunDialogStatus, RunSource } from "./run-source"
 
 /**
- * "New run" for the fixture-backed surfaces (plan 005): a dialog that replays a
- * scripted run — the day counter sweeps the curve while analyst signals,
- * committee views, risk-gate actions and fills stream into a stick-to-bottom
- * feed, and the fixture run's real metrics land at the end. Wraps the trigger
- * button; nothing renders (or runs) until the user opens it, so the demo pages
- * stay statically prerendered.
+ * "New run" dialog. One dialog, two data sources (plan 005 seam):
+ *
+ *  - `source="simulated"` (default, the public `/demo` surface): replays a scripted
+ *    run from the committed fixtures — no backend, statically prerenderable.
+ *  - `source="real"` (signed-in `/dashboard`): POSTs a real backtest to
+ *    `/api/runs`, streams the engine's live `RunEvent`s over `/api/runs/[id]/events`,
+ *    and shows the run's persisted metrics on completion.
+ *
+ * Both sources drive the same {@link RunDialogState}, so everything below the source
+ * seam is shared presentation. Nothing runs (or connects) until the user opens the
+ * dialog and presses Start, so the demo pages stay statically prerendered.
  */
 export function LiveRunDialog({
   basePath,
   trigger,
+  source = "simulated",
 }: {
   basePath: string
   /** The trigger element, e.g. the surface's existing "New run" button. */
   trigger: React.ReactElement
+  /** Which data source backs the dialog. Defaults to the scripted simulation. */
+  source?: "simulated" | "real"
+}) {
+  return source === "real" ? (
+    <RealRunDialog basePath={basePath} trigger={trigger} />
+  ) : (
+    <SimulatedRunDialog basePath={basePath} trigger={trigger} />
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Source-specific chrome + adapters                                   */
+/* ------------------------------------------------------------------ */
+
+interface DialogChrome {
+  /** The honest disclosure badge in the header. */
+  readonly badge: { label: string; variant: "amber" | "blue" }
+  readonly description: string
+  readonly idle: React.ReactNode
+}
+
+function SimulatedRunDialog({
+  basePath,
+  trigger,
+}: {
+  basePath: string
+  trigger: React.ReactElement
 }) {
   const { state, detail, start, reset } = useSimulatedRun()
+
+  // Adapt the scripted state onto the shared contract. The fixture id is the
+  // stable label + detail target; metrics land on completion.
+  const source: RunSource = {
+    state: {
+      status: state.status,
+      runIdLabel: SIMULATED_RUN_ID,
+      detailRunId: SIMULATED_RUN_ID,
+      day: state.day,
+      totalDays: state.totalDays,
+      equity: state.equity,
+      feed: state.feed,
+      metrics: state.status === "completed" ? (detail?.metrics ?? null) : null,
+      error: null,
+    },
+    strategyName: detail?.strategy.name ?? "earnings-drift",
+    start,
+    reset,
+  }
+
+  const chrome: DialogChrome = {
+    badge: { label: "Simulated — mock data", variant: "amber" },
+    description:
+      "A scripted replay of a recorded backtest — the same event stream the engine emits, played back from the demo fixtures.",
+    idle: (
+      <>
+        Launches the{" "}
+        <span className="text-foreground">{source.strategyName}</span> panel over
+        60 trading days of the bundled dataset: each decision day the analysts emit
+        signals with written theses, the committee blends them into target weights,
+        the risk gate clips or vetoes, and fills settle into the ledger.
+      </>
+    ),
+  }
+
+  return (
+    <RunDialogFrame basePath={basePath} trigger={trigger} source={source} chrome={chrome} />
+  )
+}
+
+function RealRunDialog({
+  basePath,
+  trigger,
+}: {
+  basePath: string
+  trigger: React.ReactElement
+}) {
+  const source = useRealRun()
+
+  const chrome: DialogChrome = {
+    badge: { label: "Live — real engine", variant: "blue" },
+    description:
+      "Runs the real engine backtest on the bundled dataset and streams its progress live. The result is persisted to your runs.",
+    idle: (
+      <>
+        Runs the{" "}
+        <span className="text-foreground">{source.strategyName}</span> quant panel
+        over the bundled dataset on the real engine: each decision day the analysts
+        evaluate the universe, the committee sizes target weights, the risk gate
+        clips or vetoes, and fills settle into the ledger. Progress streams here
+        live; the committee, gate, and fill detail is saved to the run.
+      </>
+    ),
+  }
+
+  return (
+    <RunDialogFrame basePath={basePath} trigger={trigger} source={source} chrome={chrome} />
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Shared presentation                                                 */
+/* ------------------------------------------------------------------ */
+
+function RunDialogFrame({
+  basePath,
+  trigger,
+  source,
+  chrome,
+}: {
+  basePath: string
+  trigger: React.ReactElement
+  source: RunSource
+  chrome: DialogChrome
+}) {
+  const { state } = source
+  const showIdle = state.status === "idle" && !state.error
 
   return (
     <Dialog
       onOpenChange={(open) => {
-        // Closing cancels a mid-flight replay so a reopen starts clean.
-        if (!open) reset()
+        // Closing cancels a mid-flight run so a reopen starts clean.
+        if (!open) source.reset()
       }}
     >
       <DialogTrigger render={trigger} />
@@ -69,23 +186,15 @@ export function LiveRunDialog({
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>New run</DialogTitle>
-            <Badge variant="amber">Simulated — mock data</Badge>
+            <Badge variant={chrome.badge.variant}>{chrome.badge.label}</Badge>
           </div>
-          <DialogDescription>
-            A scripted replay of a recorded backtest — the same event stream the
-            engine emits, played back from the demo fixtures.
-          </DialogDescription>
+          <DialogDescription>{chrome.description}</DialogDescription>
         </DialogHeader>
 
-        {state.status === "idle" ? (
-          <Idle onStart={start} strategyName={detail?.strategy.name} />
+        {showIdle ? (
+          <Idle onStart={source.start}>{chrome.idle}</Idle>
         ) : (
-          <Replay
-            state={state}
-            basePath={basePath}
-            metrics={detail?.metrics ?? null}
-            onRestart={start}
-          />
+          <Replay state={state} basePath={basePath} onRestart={source.start} />
         )}
       </DialogContent>
     </Dialog>
@@ -94,23 +203,14 @@ export function LiveRunDialog({
 
 function Idle({
   onStart,
-  strategyName,
+  children,
 }: {
   onStart: () => void
-  strategyName: string | undefined
+  children: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs/relaxed text-muted-foreground">
-        Launches the{" "}
-        <span className="text-foreground">
-          {strategyName ?? "earnings-drift"}
-        </span>{" "}
-        panel over 60 trading days of the bundled dataset: each decision day the
-        analysts emit signals with written theses, the committee blends them
-        into target weights, the risk gate clips or vetoes, and fills settle
-        into the ledger.
-      </p>
+      <p className="text-xs/relaxed text-muted-foreground">{children}</p>
       <Button onClick={onStart} className="self-start">
         Start run
       </Button>
@@ -119,34 +219,44 @@ function Idle({
 }
 
 const STATUS_BADGE: Record<
-  Exclude<SimulatedRunStatus, "idle">,
-  { label: string; variant: "neutral" | "blue" | "green" }
+  Exclude<RunDialogStatus, "idle">,
+  { label: string; variant: "neutral" | "blue" | "green" | "red" | "amber" }
 > = {
   queued: { label: "Queued", variant: "neutral" },
   running: { label: "Running", variant: "blue" },
   completed: { label: "Completed", variant: "green" },
+  failed: { label: "Failed", variant: "red" },
+  disconnected: { label: "Stream lost", variant: "amber" },
 }
 
 function Replay({
   state,
   basePath,
-  metrics,
   onRestart,
 }: {
-  state: ReturnType<typeof useSimulatedRun>["state"]
+  state: RunDialogState
   basePath: string
-  metrics: {
-    sharpe: number
-    cagr: number
-    maxDrawdown: number
-    hitRate: number
-    turnover: number
-  } | null
   onRestart: () => void
 }) {
-  const badge =
-    STATUS_BADGE[state.status as Exclude<SimulatedRunStatus, "idle">]
-  const done = state.status === "completed"
+  const badge = STATUS_BADGE[state.status as Exclude<RunDialogStatus, "idle">]
+  const terminal =
+    state.status === "completed" ||
+    state.status === "failed" ||
+    state.status === "disconnected"
+  // The progress bar tracks live execution only: shown while queued/running and
+  // filled on completion, hidden for failed/disconnected so a stalled run never
+  // animates an indeterminate bar. Indeterminate (null) while a real run's total
+  // is unknown; exact for the scripted sweep.
+  const showProgress =
+    state.status === "queued" ||
+    state.status === "running" ||
+    state.status === "completed"
+  const progressValue =
+    state.status === "completed"
+      ? 100
+      : state.totalDays
+        ? (state.day / state.totalDays) * 100
+        : null
 
   return (
     // Fades in over the Idle panel it replaces inside the already-open dialog.
@@ -154,9 +264,11 @@ function Replay({
       {/* Status strip */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Badge variant={badge.variant}>{badge.label}</Badge>
-        <span className="font-mono text-xs text-muted-foreground">
-          {SIMULATED_RUN_ID}
-        </span>
+        {state.runIdLabel ? (
+          <span className="font-mono text-xs text-muted-foreground">
+            {state.runIdLabel}
+          </span>
+        ) : null}
         <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
           Day {state.day} / {state.totalDays || "—"}
           {state.equity !== null
@@ -164,11 +276,9 @@ function Replay({
             : ""}
         </span>
       </div>
-      <Progress
-        value={state.totalDays ? (state.day / state.totalDays) * 100 : 0}
-      />
+      {showProgress ? <Progress value={progressValue} /> : null}
 
-      {/* Event feed — pins to the newest entry while the replay streams in;
+      {/* Event feed — pins to the newest entry while the run streams in;
           scrolling up releases the pin and surfaces the jump-to-end button. */}
       <MessageScrollerProvider autoScroll>
         <MessageScroller className="h-56 rounded-none bg-card ring-1 ring-foreground/10">
@@ -185,50 +295,79 @@ function Replay({
         </MessageScroller>
       </MessageScrollerProvider>
 
-      {/* Result — the payoff of the replay, so it earns the page-length
-          entrance; opacity+transform only, and motion-safe gates it. */}
-      {done && metrics ? (
+      {state.error ? <ErrorBlock error={state.error} /> : null}
+
+      {/* Result — the payoff, so it earns the page-length entrance; opacity+
+          transform only, and motion-safe gates it. */}
+      {terminal ? (
         <div className="flex flex-col gap-3 motion-safe:animate-slide-up-fade">
-          <StatBar>
-            {/* min-w tightened from the default 9rem so all four fit one row
-                inside the dialog's width instead of orphaning the last cell. */}
-            <StatItem
-              size="sm"
-              className="min-w-[6.5rem]"
-              label="Sharpe"
-              value={metrics.sharpe.toFixed(2)}
-            />
-            <StatItem
-              size="sm"
-              className="min-w-[6.5rem]"
-              label="CAGR"
-              value={formatSignedPercent(metrics.cagr, 1)}
-            />
-            <StatItem
-              size="sm"
-              className="min-w-[6.5rem]"
-              label="Max drawdown"
-              value={formatSignedPercent(metrics.maxDrawdown, 1)}
-            />
-            <StatItem
-              size="sm"
-              className="min-w-[6.5rem]"
-              label="Hit rate"
-              value={`${metrics.hitRate.toFixed(0)}%`}
-            />
-          </StatBar>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="ghost" onClick={onRestart}>
-              Run again
-            </Button>
-            <Button
-              variant="outline"
-              render={<Link href={`${basePath}/runs/${SIMULATED_RUN_ID}`} />}
-            >
-              View full run →
-            </Button>
-          </div>
+          {state.metrics ? (
+            <StatBar>
+              {/* min-w tightened from the default 9rem so all four fit one row
+                  inside the dialog's width instead of orphaning the last cell. */}
+              <StatItem
+                size="sm"
+                className="min-w-[6.5rem]"
+                label="Sharpe"
+                value={state.metrics.sharpe.toFixed(2)}
+              />
+              <StatItem
+                size="sm"
+                className="min-w-[6.5rem]"
+                label="CAGR"
+                value={formatSignedPercent(state.metrics.cagr, 1)}
+              />
+              <StatItem
+                size="sm"
+                className="min-w-[6.5rem]"
+                label="Max drawdown"
+                value={formatSignedPercent(state.metrics.maxDrawdown, 1)}
+              />
+              <StatItem
+                size="sm"
+                className="min-w-[6.5rem]"
+                label="Hit rate"
+                value={`${state.metrics.hitRate.toFixed(0)}%`}
+              />
+            </StatBar>
+          ) : null}
+          {state.error?.kind !== "auth" ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button variant="ghost" onClick={onRestart}>
+                Run again
+              </Button>
+              {state.detailRunId ? (
+                <Button
+                  variant="outline"
+                  render={
+                    <Link href={`${basePath}/runs/${state.detailRunId}`} />
+                  }
+                >
+                  View full run →
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** Failure / session notice. Auth failures offer a sign-in link; engine and
+ * connection failures state what happened. */
+function ErrorBlock({
+  error,
+}: {
+  error: NonNullable<RunDialogState["error"]>
+}) {
+  return (
+    <div className="flex flex-col gap-2 border border-destructive/30 bg-destructive/5 p-3 text-xs/relaxed">
+      <p className="text-destructive">{error.message}</p>
+      {error.kind === "auth" ? (
+        <Button variant="outline" size="sm" className="self-start" render={<Link href="/sign-in" />}>
+          Sign in
+        </Button>
       ) : null}
     </div>
   )
@@ -258,6 +397,21 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
           </MarkerContent>
         </Marker>
       )
+    case "day-tick":
+      return (
+        <Marker variant="separator" className="mt-1.5 first:mt-0">
+          <MarkerContent className="font-semibold text-foreground">
+            Day {entry.day} · {entry.date}
+          </MarkerContent>
+        </Marker>
+      )
+    case "analyst":
+      return (
+        <p className="text-muted-foreground">
+          <span className="text-foreground">{entry.security}</span>{" "}
+          <span>{entry.analystId}</span> evaluated
+        </p>
+      )
     case "signal":
       return (
         <p className="text-muted-foreground">
@@ -281,8 +435,7 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
     case "committee":
       return (
         <p className="text-muted-foreground">
-          <span className="text-foreground">{entry.security}</span> committee
-          net{" "}
+          <span className="text-foreground">{entry.security}</span> committee net{" "}
           <span className="tabular-nums">
             {formatSignedNumber(entry.netView)}
           </span>{" "}

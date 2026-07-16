@@ -1,13 +1,22 @@
 import { Suspense } from "react"
 
+import { RealRunsSection } from "@/components/dashboard/runs/real-runs-section"
 import { RunsView } from "@/components/dashboard/runs-view"
 
-// Session-guarded by the /dashboard layout; sample fixtures for now. RunsView
-// reads URL filter state via nuqs, so it lives under a Suspense boundary.
+// Session-guarded by the /dashboard layout. The user's real runs load from the DAL
+// at the top; the sample fixture history (shared with /demo) sits below it, clearly
+// marked. New run here triggers the real engine (source="real"). RunsView owns its
+// own padding (it also backs /demo) and reads URL filter state via nuqs, so it
+// lives under a Suspense boundary; the real section matches its horizontal padding.
 export default function DashboardRunsPage() {
   return (
-    <Suspense>
-      <RunsView basePath="/dashboard" />
-    </Suspense>
+    <>
+      <div className="px-4 pt-4 md:px-6 md:pt-6">
+        <RealRunsSection />
+      </div>
+      <Suspense>
+        <RunsView basePath="/dashboard" source="real" />
+      </Suspense>
+    </>
   )
 }

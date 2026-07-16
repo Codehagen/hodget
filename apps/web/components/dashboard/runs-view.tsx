@@ -104,7 +104,14 @@ function Pagination({ shown, total }: { shown: number; total: number }) {
  * jump links. All fixture data for now; filter + selection state is client-side
  * and instant (no row-select animation, per Design.md's frequency rule).
  */
-export function RunsView({ basePath }: { basePath: string }) {
+export function RunsView({
+  basePath,
+  source = "simulated",
+}: {
+  basePath: string
+  /** Which data source backs the New-run dialog. `/dashboard` passes "real". */
+  source?: "simulated" | "real"
+}) {
   const [query, setQuery] = React.useState("")
   const [strategy, setStrategy] = React.useState("all")
   const [mode, setMode] = useQueryState(
@@ -156,6 +163,7 @@ export function RunsView({ basePath }: { basePath: string }) {
         actions={
           <LiveRunDialog
             basePath={basePath}
+            source={source}
             trigger={
               <Button>
                 <HugeiconsIcon icon={PlusSignIcon} size={15} strokeWidth={2} />

@@ -27,10 +27,13 @@ export function DashboardView({
   data,
   basePath,
   notice,
+  source = "simulated",
 }: {
   data: DashboardData
   basePath: string
   notice?: React.ReactNode
+  /** Which data source backs the New-run dialog. `/dashboard` passes "real". */
+  source?: "simulated" | "real"
 }) {
   return (
     <div className="flex flex-1 flex-col gap-5 p-4 md:p-6">
@@ -48,7 +51,7 @@ export function DashboardView({
           </p>
         </div>
 
-        <DashboardHeaderControls basePath={basePath} />
+        <DashboardHeaderControls basePath={basePath} source={source} />
       </div>
 
       {/* Status strip */}

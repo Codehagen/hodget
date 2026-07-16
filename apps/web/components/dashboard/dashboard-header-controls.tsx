@@ -32,7 +32,13 @@ const PORTFOLIOS = [
  * can be a server component — everything else on the page is static
  * presentation over fixtures.
  */
-export function DashboardHeaderControls({ basePath }: { basePath: string }) {
+export function DashboardHeaderControls({
+  basePath,
+  source = "simulated",
+}: {
+  basePath: string
+  source?: "simulated" | "real"
+}) {
   const [portfolio, setPortfolio] = React.useState<string>(PORTFOLIOS[0])
 
   return (
@@ -60,6 +66,7 @@ export function DashboardHeaderControls({ basePath }: { basePath: string }) {
       </Button>
       <LiveRunDialog
         basePath={basePath}
+        source={source}
         trigger={
           <Button>
             <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />

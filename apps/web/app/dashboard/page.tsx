@@ -10,6 +10,7 @@ export default function DashboardPage() {
     <DashboardView
       data={DEMO_DASHBOARD}
       basePath="/dashboard"
+      source="real"
       notice={
         <Badge variant="neutral" className="font-normal">
           Sample data · live wiring coming
