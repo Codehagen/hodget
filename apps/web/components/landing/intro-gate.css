@@ -1,11 +1,23 @@
 /*
- * Hero intro gate — suppress the one-time `slide-up-fade` keyframe on any mount
- * after the first per page load (i.e. a back-nav to the landing page). IntroGate
- * sets `data-intro="seen"` from a module-scoped "has played" flag; nulling only
- * `animation-name` (not the shorthand) leaves the `motion-safe:animate-slide-up-fade`
- * class in place while stopping it from running. Mirrors the decisions-view
- * entrance-gate precedent (decisions-view.css).
+ * Hero intro gate — the one-time entrance for the landing hero. IntroGate sets
+ * `data-intro="play"` on the first mount per page load and `"seen"` on any
+ * later mount (back-nav), so the intro never replays; see intro-gate.tsx.
+ *
+ * The animation lives on the wrapper's direct children rather than the wrapper
+ * itself so the headline, subhead, and CTA row cascade in 70ms apart instead of
+ * arriving as one slab. `backwards` keeps the delayed children hidden until
+ * their turn. `slide-up-fade` is the shared keyframe from
+ * packages/ui/src/styles/globals.css. Gated on reduced motion here because the
+ * animation is authored in CSS, not via a `motion-safe:` utility.
  */
-.hero-intro[data-intro="seen"] {
-  animation-name: none;
+@media (prefers-reduced-motion: no-preference) {
+  .hero-intro[data-intro="play"] > * {
+    animation: slide-up-fade var(--duration-page) var(--ease-out-quart) backwards;
+  }
+  .hero-intro[data-intro="play"] > :nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .hero-intro[data-intro="play"] > :nth-child(3) {
+    animation-delay: 140ms;
+  }
 }

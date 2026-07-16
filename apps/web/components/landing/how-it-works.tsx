@@ -1,10 +1,21 @@
+"use client"
+
+import * as React from "react"
 import Link from "next/link"
 
+import { cn } from "@workspace/ui/lib/utils"
+
 /**
- * Static explainer for the "How it works" tab on the landing page — the five
+ * Explainer for the "How it works" tab on the landing page — the five
  * questions the decision map answers, in order. Copy mirrors the decision-map
  * stage headers (components/dashboard/decision-map/layout.ts) and the tone of
- * the "Reading the decision map" blog post. Server-renderable; no motion.
+ * the "Reading the decision map" blog post.
+ *
+ * The steps cascade in (60ms apart) the first time the tab is opened —
+ * marketing tier, seen once per visitor, mirroring the CanvasReveal entrance
+ * on the sibling tab. The tab panel is not `keepMounted`, so this component
+ * remounts on every tab switch; a module-scoped "has played" flag (the
+ * IntroGate precedent) keeps the cascade to the first open per page load.
  */
 const STEPS = [
   {
@@ -29,12 +40,36 @@ const STEPS = [
   },
 ]
 
+let played = false
+
 export function HowItWorks() {
+  const [suppressed] = React.useState(() => played)
+
+  React.useEffect(() => {
+    // Deferred a tick so Strict Mode's throwaway mount never marks it played
+    // early (the IntroGate pattern — see intro-gate.tsx for the full why).
+    const id = window.setTimeout(() => {
+      played = true
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [])
+
   return (
     <div className="flex flex-col gap-8">
       <ol className="flex flex-col gap-6">
         {STEPS.map((step, i) => (
-          <li key={step.question} className="flex gap-4">
+          <li
+            key={step.question}
+            className={cn(
+              "flex gap-4",
+              !suppressed && "motion-safe:animate-slide-up-fade"
+            )}
+            style={
+              suppressed
+                ? undefined
+                : { animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }
+            }
+          >
             <span className="flex size-7 shrink-0 items-center justify-center bg-foreground font-heading text-sm font-black tabular-nums text-background">
               {i + 1}
             </span>
@@ -50,7 +85,17 @@ export function HowItWorks() {
         ))}
       </ol>
 
-      <div className="flex flex-col gap-4 border-t border-border pt-6">
+      <div
+        className={cn(
+          "flex flex-col gap-4 border-t border-border pt-6",
+          !suppressed && "motion-safe:animate-slide-up-fade"
+        )}
+        style={
+          suppressed
+            ? undefined
+            : { animationDelay: "300ms", animationFillMode: "backwards" }
+        }
+      >
         <p className="max-w-2xl text-sm text-foreground">
           Views are opinions. Deterministic code sizes positions, applies safety
           limits, and records fills.

@@ -19,6 +19,11 @@ Audit provenance:
   embedded decision-map canvas) at commit `9d9169e` (2026-07-14).
 - 036: full-repo motion audit (all eight categories, `packages/ui` +
   `apps/web`) at commit `91466cd` (2026-07-15).
+- 037: single-plan handoff from a find-animation-opportunities sweep at commit
+  `b1de3cb` (2026-07-16) — top opportunity only (run-completion moment). The
+  sweep's four smaller opportunities shipped alongside it without plans:
+  live-run feed-row fade-in, how-it-works step cascade, hero group stagger,
+  and the explicit theme-toggle crossfade (`useThemeToggle`).
 
 ## Plans
 
@@ -60,6 +65,7 @@ Audit provenance:
 | [034](034-summary-tab-timeline-draw.md) | Decisions Summary tab: timeline one-time draw + Open-evidence focus ring | LOW | Missed opportunity / Accessibility | DONE |
 | [035](035-waitlist-success-polish.md) | Waitlist: success-state fade + entrance idiom, no card collapse | LOW | Cohesion / Missed opportunity | DONE |
 | [036](036-bulk-action-bar-motion-budget.md) | Bulk-action bar: entrance to base duration, motion-safe gate, press feedback | MEDIUM | Easing & duration / Physicality | DONE |
+| [037](037-run-completion-moment.md) | Run-completion moment gets a deliberate arrival (badge pop + check draw, staggered stats) | MEDIUM | Missed opportunity | DONE |
 
 ## Recommended execution order & dependencies
 
@@ -82,6 +88,8 @@ Audit provenance:
 
 ### Batch 013-021 (dashboard refresh audit)
 
+0. **037** (run-completion moment) — the only open plan; fully independent
+   (single file, `live-run-dialog.tsx`), can land any time.
 1. **013** (Recharts tokens) — first; highest feel impact of the batch and
    fully independent.
 2. **015** (progress scaleX) — next; its two halves (progress.tsx +

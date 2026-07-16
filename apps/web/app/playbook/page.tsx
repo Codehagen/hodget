@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useTheme } from "next-themes"
+import { useThemeToggle } from "@/components/theme-provider"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Alert02Icon,
@@ -1071,17 +1071,18 @@ function Strong({ children }: { children: React.ReactNode }) {
 
 /**
  * Floating light/dark toggle. The visible icon is driven by the `dark` class
- * via CSS (not JS state), so there's no hydration flash; the click uses
- * next-themes' resolvedTheme to flip. (The app also toggles on the "D" key.)
+ * via CSS (not JS state), so there's no hydration flash; the click flips the
+ * theme via useThemeToggle, which crossfades the swap. (The app also toggles
+ * on the "D" key.)
  */
 function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
+  const toggleTheme = useThemeToggle()
   return (
     <button
       type="button"
       aria-label="Toggle light and dark mode"
       title="Toggle theme (or press D)"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={toggleTheme}
       className="fixed top-4 right-4 z-50 flex size-9 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
     >
       <HugeiconsIcon icon={Sun03Icon} size={18} className="hidden dark:block" />

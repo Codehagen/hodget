@@ -21,6 +21,32 @@ function ThemeProvider({
   )
 }
 
+/**
+ * Explicit light/dark flips crossfade instead of hard-cutting: the toggle
+ * stamps `data-theme-transition` on <html> for the flip and removes it once
+ * the fade is over. globals.css pairs the attribute with a short uniform
+ * color transition (higher specificity than the `transition: none` next-themes
+ * injects for `disableTransitionOnChange`, so the crossfade wins for explicit
+ * toggles while system-initiated theme changes stay guarded). Every toggle
+ * surface (sidebar button, "D" hotkey, playbook) goes through this hook.
+ */
+const THEME_TRANSITION_MS = 250
+let transitionTimer: number | undefined
+
+function useThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+
+  return React.useCallback(() => {
+    const root = document.documentElement
+    root.setAttribute("data-theme-transition", "")
+    window.clearTimeout(transitionTimer)
+    transitionTimer = window.setTimeout(() => {
+      root.removeAttribute("data-theme-transition")
+    }, THEME_TRANSITION_MS)
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  }, [resolvedTheme, setTheme])
+}
+
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false
@@ -35,7 +61,7 @@ function isTypingTarget(target: EventTarget | null) {
 }
 
 function ThemeHotkey() {
-  const { resolvedTheme, setTheme } = useTheme()
+  const toggleTheme = useThemeToggle()
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -55,7 +81,7 @@ function ThemeHotkey() {
         return
       }
 
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
+      toggleTheme()
     }
 
     window.addEventListener("keydown", onKeyDown)
@@ -63,9 +89,9 @@ function ThemeHotkey() {
     return () => {
       window.removeEventListener("keydown", onKeyDown)
     }
-  }, [resolvedTheme, setTheme])
+  }, [toggleTheme])
 
   return null
 }
 
-export { ThemeProvider }
+export { ThemeProvider, useThemeToggle }

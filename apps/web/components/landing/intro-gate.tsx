@@ -25,8 +25,10 @@ import { cn } from "@workspace/ui/lib/utils"
  * throwaway first mount (immediately unmounted) never marks it played early —
  * otherwise the real mount would suppress the very first play.
  *
- * `data-intro="seen"` nulls the keyframe via intro-gate.css, mirroring the
- * decisions-view entrance-gate precedent (`data-entrance`).
+ * The entrance itself lives in intro-gate.css, keyed on `data-intro="play"` —
+ * the wrapper's direct children cascade in 70ms apart. A "seen" mount matches
+ * no animation selector at all, mirroring the decisions-view entrance-gate
+ * precedent (`data-entrance`).
  */
 let played = false
 
@@ -48,7 +50,7 @@ export function IntroGate({
 
   return (
     <div
-      className={cn("hero-intro motion-safe:animate-slide-up-fade", className)}
+      className={cn("hero-intro", className)}
       data-intro={suppressed ? "seen" : "play"}
     >
       {children}

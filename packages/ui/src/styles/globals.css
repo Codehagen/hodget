@@ -297,6 +297,36 @@
 }
 
 /*
+ * Explicit theme-toggle crossfade. The app's toggle (useThemeToggle in
+ * apps/web) stamps `data-theme-transition` on <html> for ~250ms around the
+ * light/dark class flip; while present, every element eases its colors instead
+ * of hard-cutting — a full-viewport brightness jump is jarring (and an
+ * accessibility concern). The uniform property list keeps the fade consistent
+ * across elements that otherwise transition nothing.
+ *
+ * next-themes' `disableTransitionOnChange` injects `* { transition: none
+ * !important }` during ANY theme change (guarding system-initiated flips);
+ * this selector's higher specificity deliberately outranks it for explicit
+ * toggles, where the attribute is present. Gated on reduced motion: a hard
+ * cut is the correct reduced-motion behavior for a whole-viewport change.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme-transition],
+  :root[data-theme-transition] *,
+  :root[data-theme-transition] ::before,
+  :root[data-theme-transition] ::after {
+    transition:
+      color var(--duration-base) var(--ease-out-quad),
+      background-color var(--duration-base) var(--ease-out-quad),
+      border-color var(--duration-base) var(--ease-out-quad),
+      outline-color var(--duration-base) var(--ease-out-quad),
+      fill var(--duration-base) var(--ease-out-quad),
+      stroke var(--duration-base) var(--ease-out-quad),
+      box-shadow var(--duration-base) var(--ease-out-quad) !important;
+  }
+}
+
+/*
  * Honor the OS "Reduce transparency" setting: scrims go frosted-to-solid.
  * The blur comes off and the scrim darkens enough to separate layers on its
  * own, since blur was doing part of that separation work.

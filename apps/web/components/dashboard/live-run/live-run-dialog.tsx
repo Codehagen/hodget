@@ -261,9 +261,18 @@ function Replay({
   return (
     // Fades in over the Idle panel it replaces inside the already-open dialog.
     <div className="flex flex-col gap-3 motion-safe:animate-fade-in">
-      {/* Status strip */}
+      {/* Status strip. The badge remounts per status so each flip (rare — a
+          handful per run) gets a subtle scale-pop; completion also draws a
+          check just after the pop. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Badge variant={badge.variant}>{badge.label}</Badge>
+        <Badge
+          key={state.status}
+          variant={badge.variant}
+          className="motion-safe:animate-scale-in"
+        >
+          {state.status === "completed" ? <CompletedCheck /> : null}
+          {badge.label}
+        </Badge>
         {state.runIdLabel ? (
           <span className="font-mono text-xs text-muted-foreground">
             {state.runIdLabel}
@@ -284,8 +293,13 @@ function Replay({
         <MessageScroller className="h-56 rounded-none bg-card ring-1 ring-foreground/10">
           <MessageScrollerViewport aria-label="Run event feed">
             <MessageScrollerContent className="gap-1.5 p-3 font-mono text-[11px]/relaxed">
+              {/* Rows fade in as they stream — arrival, not decoration, so
+                  opacity only at the fast duration (matches ask-view turns). */}
               {state.feed.map((entry, i) => (
-                <MessageScrollerItem key={i}>
+                <MessageScrollerItem
+                  key={i}
+                  className="motion-safe:animate-fade-in motion-safe:[animation-duration:var(--duration-fast)]"
+                >
                   <FeedRow entry={entry} />
                 </MessageScrollerItem>
               ))}
@@ -297,42 +311,69 @@ function Replay({
 
       {state.error ? <ErrorBlock error={state.error} /> : null}
 
-      {/* Result — the payoff, so it earns the page-length entrance; opacity+
-          transform only, and motion-safe gates it. */}
+      {/* Result — the payoff, so completion earns a sequenced arrival: the
+          container fades while the stats cascade in 60ms apart and the action
+          row lands last (~640ms total, opacity/transform only, motion-safe).
+          Failed/disconnected keep the plain single entrance — no celebration
+          on a failure path. */}
       {terminal ? (
-        <div className="flex flex-col gap-3 motion-safe:animate-slide-up-fade">
+        <div
+          className={cn(
+            "flex flex-col gap-3",
+            state.status === "completed"
+              ? "motion-safe:animate-fade-in"
+              : "motion-safe:animate-slide-up-fade"
+          )}
+        >
           {state.metrics ? (
             <StatBar>
               {/* min-w tightened from the default 9rem so all four fit one row
-                  inside the dialog's width instead of orphaning the last cell. */}
+                  inside the dialog's width instead of orphaning the last cell.
+                  Metrics only exist on completion, so the stagger never plays
+                  on a failure path. */}
               <StatItem
                 size="sm"
-                className="min-w-[6.5rem]"
+                className="min-w-[6.5rem] motion-safe:animate-slide-up-fade"
+                style={{ animationFillMode: "backwards" }}
                 label="Sharpe"
                 value={state.metrics.sharpe.toFixed(2)}
               />
               <StatItem
                 size="sm"
-                className="min-w-[6.5rem]"
+                className="min-w-[6.5rem] motion-safe:animate-slide-up-fade"
+                style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
                 label="CAGR"
                 value={formatSignedPercent(state.metrics.cagr, 1)}
               />
               <StatItem
                 size="sm"
-                className="min-w-[6.5rem]"
+                className="min-w-[6.5rem] motion-safe:animate-slide-up-fade"
+                style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
                 label="Max drawdown"
                 value={formatSignedPercent(state.metrics.maxDrawdown, 1)}
               />
               <StatItem
                 size="sm"
-                className="min-w-[6.5rem]"
+                className="min-w-[6.5rem] motion-safe:animate-slide-up-fade"
+                style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
                 label="Hit rate"
                 value={`${state.metrics.hitRate.toFixed(0)}%`}
               />
             </StatBar>
           ) : null}
           {state.error?.kind !== "auth" ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div
+              className={cn(
+                "flex flex-wrap items-center justify-end gap-2",
+                state.status === "completed" &&
+                  "motion-safe:animate-slide-up-fade"
+              )}
+              style={
+                state.status === "completed"
+                  ? { animationDelay: "240ms", animationFillMode: "backwards" }
+                  : undefined
+              }
+            >
               <Button variant="ghost" onClick={onRestart}>
                 Run again
               </Button>
@@ -370,6 +411,26 @@ function ErrorBlock({
         </Button>
       ) : null}
     </div>
+  )
+}
+
+/** Check drawn inside the Completed badge — the checkbox's draw-stroke idiom
+ * (checkbox.tsx), delayed 100ms so it lands just after the badge's scale-in. */
+function CompletedCheck() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path
+        d="M11.5 4L5.75 10L2.5 7"
+        pathLength="1"
+        strokeDasharray="1"
+        className="motion-safe:animate-draw-stroke"
+        style={{ animationDelay: "100ms", animationFillMode: "backwards" }}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
