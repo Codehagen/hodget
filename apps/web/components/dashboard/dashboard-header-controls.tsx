@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { PlusSignIcon, Refresh01Icon } from "@hugeicons/core-free-icons"
 
@@ -31,6 +32,10 @@ const PORTFOLIOS = [
  * select, refresh, and the New run dialog. Split out so DashboardView itself
  * can be a server component — everything else on the page is static
  * presentation over fixtures.
+ *
+ * The portfolio select and the frozen "as of" timestamp belong to the mock
+ * fixtures, so they render only for the simulated source; the signed-in
+ * dashboard hides them until real portfolios exist.
  */
 export function DashboardHeaderControls({
   basePath,
@@ -39,29 +44,39 @@ export function DashboardHeaderControls({
   basePath: string
   source?: "simulated" | "real"
 }) {
+  const router = useRouter()
   const [portfolio, setPortfolio] = React.useState<string>(PORTFOLIOS[0])
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={portfolio}
-        onValueChange={(next) => next && setPortfolio(next)}
+      {source === "simulated" ? (
+        <>
+          <Select
+            value={portfolio}
+            onValueChange={(next) => next && setPortfolio(next)}
+          >
+            <SelectTrigger aria-label="Select portfolio" className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PORTFOLIOS.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="hidden font-mono text-xs text-muted-foreground tabular-nums sm:inline">
+            {AS_OF}
+          </span>
+        </>
+      ) : null}
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Refresh"
+        onClick={() => router.refresh()}
       >
-        <SelectTrigger aria-label="Select portfolio" className="h-8">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {PORTFOLIOS.map((name) => (
-            <SelectItem key={name} value={name}>
-              {name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <span className="hidden font-mono text-xs text-muted-foreground tabular-nums sm:inline">
-        {AS_OF}
-      </span>
-      <Button variant="outline" size="icon" aria-label="Refresh">
         <HugeiconsIcon icon={Refresh01Icon} size={16} />
       </Button>
       <LiveRunDialog

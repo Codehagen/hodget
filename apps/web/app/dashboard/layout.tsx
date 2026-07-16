@@ -6,6 +6,7 @@ import {
 } from "@workspace/ui/components/sidebar"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
+import { SampleDataBadge } from "@/components/dashboard/sample-data-badge"
 import { constructMetadata } from "@/lib/metadata"
 import { requireSession } from "@/lib/session"
 
@@ -42,6 +43,7 @@ export default async function DashboardLayout({
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-4 self-center" />
+          <SampleDataBadge />
         </header>
         {children}
       </SidebarInset>

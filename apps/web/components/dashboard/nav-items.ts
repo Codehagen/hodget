@@ -7,7 +7,6 @@ import {
   Database01Icon,
   Flowchart01Icon,
   RocketIcon,
-  Settings01Icon,
   UserMultiple02Icon,
 } from "@hugeicons/core-free-icons"
 
@@ -28,7 +27,7 @@ export type NavGroup = {
 // Grouped around the engine lifecycle: overview, then the cycle and its inputs.
 // `href` is a segment relative to the section base — NavMain composes it with
 // the current basePath ("/dashboard" or "/demo"). The index item (`exact`)
-// resolves to the base itself. Settings has no destination yet, so it stays "#".
+// resolves to the base itself.
 export const NAV_GROUPS = [
   {
     label: "Overview",
@@ -53,7 +52,3 @@ export const NAV_GROUPS = [
     ],
   },
 ] satisfies NavGroup[]
-
-export const NAV_SECONDARY = [
-  { title: "Settings", href: "#", icon: Settings01Icon },
-] satisfies NavItem[]

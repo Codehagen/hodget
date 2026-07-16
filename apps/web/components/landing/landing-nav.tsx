@@ -10,7 +10,7 @@ const GITHUB_URL = "https://github.com/Codehagen/hodget"
  * Landing top bar — one line, ~64px. Wordmark left; navigation and the primary
  * waitlist CTA right. Sticky with a hairline underline and a translucent
  * backdrop so content reads under it while scrolling. No logo wall, no scroll
- * cues — just the four destinations.
+ * cues — just the handful of destinations.
  */
 export function LandingNav() {
   return (
@@ -50,6 +50,14 @@ export function LandingNav() {
             className="text-muted-foreground hover:text-foreground"
           >
             <HugeiconsIcon icon={GithubIcon} size={16} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href="/sign-in" />}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Sign in
           </Button>
           <Button size="sm" render={<Link href="/waitlist" />}>
             Join the waitlist

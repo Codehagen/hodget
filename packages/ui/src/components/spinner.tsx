@@ -7,7 +7,12 @@ function Spinner({
   ...props
 }: Omit<React.ComponentProps<"svg">, "strokeWidth">) {
   return (
-    <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} data-slot="spinner" role="status" aria-label="Loading" className={cn("size-4 animate-spin", className)} {...props} />
+    <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} data-slot="spinner" role="status" aria-label="Loading" className={cn(
+        // 0.6s, not Tailwind's 1s default — a faster spinner reads as a faster
+        // app at the same load time.
+        "size-4 animate-spin [animation-duration:0.6s]",
+        className,
+      )} {...props} />
   )
 }
 

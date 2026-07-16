@@ -10,7 +10,7 @@ import {
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
 
-import { NavMain, NavSecondary } from "./nav-main"
+import { NavMain } from "./nav-main"
 import { NavThemeToggle } from "./nav-theme-toggle"
 import { NavDemoUser, NavUser, type NavUserData } from "./nav-user"
 import { WorkspaceSwitcher } from "./workspace-switcher"
@@ -41,7 +41,6 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain basePath={basePath} />
-        <NavSecondary basePath={basePath} />
       </SidebarContent>
       <SidebarFooter>
         <NavThemeToggle />

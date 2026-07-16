@@ -36,12 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs"
 
 import {
   ANALYST_RECENT_SIGNALS,
@@ -504,21 +498,9 @@ export function AnalystsView() {
             <IoCell label="Failure behavior" value={detail.io.failure} />
           </div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="overview">
-            <TabsList variant="line" className="w-full justify-start">
-              <TabsTrigger value="overview" className="flex-none">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="prompt" className="flex-none">
-                Prompt &amp; evidence
-              </TabsTrigger>
-              <TabsTrigger value="diagnostics" className="flex-none">
-                Diagnostics
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="pt-4">
+          {/* Overview. Prompt-&-evidence and diagnostics tabs return here once
+              they have real content to show — placeholders don't ship. */}
+          <div className="pt-4">
               <div className="grid gap-4 lg:grid-cols-2">
                 {/* Signal behavior */}
                 <InnerCard>
@@ -597,22 +579,7 @@ export function AnalystsView() {
                   </div>
                 </InnerCard>
               </div>
-            </TabsContent>
-
-            <TabsContent value="prompt" className="pt-4">
-              <TabPlaceholder
-                title="Prompt & evidence"
-                body="The rendered prompt template, retrieved evidence, and the written thesis for the most recent signal appear here."
-              />
-            </TabsContent>
-
-            <TabsContent value="diagnostics" className="pt-4">
-              <TabPlaceholder
-                title="Diagnostics"
-                body="Calibration curves, abstention drivers, and parse-failure traces for this analyst version appear here."
-              />
-            </TabsContent>
-          </Tabs>
+          </div>
         </MasterDetailPanel>
       </MasterDetail>
 
@@ -797,11 +764,3 @@ function FooterLink({ children }: { children: React.ReactNode }) {
   )
 }
 
-function TabPlaceholder({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="flex flex-col items-start gap-1 border border-dashed border-border p-6">
-      <span className="text-sm font-medium text-foreground">{title}</span>
-      <p className="max-w-prose text-xs/relaxed text-muted-foreground">{body}</p>
-    </div>
-  )
-}

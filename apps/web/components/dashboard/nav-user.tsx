@@ -124,8 +124,8 @@ export function NavDemoUser() {
           <div className="grid gap-1 leading-tight">
             <span className="text-sm font-medium">Exploring the demo</span>
             <span className="text-xs text-muted-foreground">
-              Everything here is sample data. Hodget is invite-only while in
-              development — join the waitlist to run your own strategies.
+              Everything here is sample data. Create an account to run your
+              own strategies, or join the waitlist for launch updates.
             </span>
           </div>
           <Button

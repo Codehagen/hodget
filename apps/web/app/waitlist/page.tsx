@@ -13,7 +13,7 @@ import { WaitlistForm } from "./waitlist-form"
 export const metadata = constructMetadata({
   title: "Join the waitlist",
   description:
-    "Hodget is invite-only while in development. Join the waitlist to get early access to the AI hedge fund engine.",
+    "Hodget is in early development. Join the waitlist to hear when the AI hedge fund engine is ready for real use.",
   canonicalUrl: "/waitlist",
 })
 
@@ -35,8 +35,8 @@ export default async function WaitlistPage({
         <CardHeader>
           <CardTitle className="text-base">Join the waitlist</CardTitle>
           <CardDescription>
-            Hodget is invite-only while in development. Leave your email and
-            we&apos;ll reach out when a spot opens.
+            Hodget is in early development. Leave your email and we&apos;ll
+            reach out as it&apos;s ready for real use.
           </CardDescription>
         </CardHeader>
         <CardContent>

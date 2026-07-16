@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 
+import { Skeleton } from "@workspace/ui/components/skeleton"
+
 import { RealRunsSection } from "@/components/dashboard/runs/real-runs-section"
 import { RunsView } from "@/components/dashboard/runs-view"
 
@@ -14,7 +16,14 @@ export default function DashboardRunsPage() {
       <div className="px-4 pt-4 md:px-6 md:pt-6">
         <RealRunsSection />
       </div>
-      <Suspense>
+      <Suspense
+        fallback={
+          <div className="flex flex-col gap-4 p-4 md:p-6">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-72" />
+          </div>
+        }
+      >
         <RunsView basePath="/dashboard" source="real" />
       </Suspense>
     </>

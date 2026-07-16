@@ -59,3 +59,6 @@ next-env.d.ts
 # playwright
 playwright-report/
 test-results/
+
+# local agent/MCP config (see .mcp.json.example)
+.mcp.json

@@ -13,22 +13,18 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar"
 
-import { NAV_GROUPS, NAV_SECONDARY, type NavItem } from "./nav-items"
+import { NAV_GROUPS, type NavItem } from "./nav-items"
 
 // The index item (`exact`) is the section home — its href is the current
 // route's base (e.g. "/dashboard" or "/demo"). Every other item stores a
 // segment ("/runs") that we compose onto the base so the same nav tree serves
-// both /dashboard and /demo. A literal "#" placeholder is passed through.
+// both /dashboard and /demo.
 function resolveHref(item: NavItem, basePath: string) {
   if (item.exact) return basePath
-  if (item.href === "#") return "#"
   return `${basePath}${item.href}`
 }
 
 function itemIsActive(pathname: string, href: string, exact?: boolean) {
-  if (href === "#") {
-    return false
-  }
   return exact
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`)
@@ -82,11 +78,5 @@ export function NavMain({ basePath }: { basePath: string }) {
         />
       ))}
     </>
-  )
-}
-
-export function NavSecondary({ basePath }: { basePath: string }) {
-  return (
-    <NavList items={NAV_SECONDARY} basePath={basePath} className="mt-auto" />
   )
 }

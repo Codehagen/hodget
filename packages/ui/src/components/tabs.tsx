@@ -62,7 +62,9 @@ function TabsIndicator({ className, ...props }: TabsPrimitive.Indicator.Props) {
     <TabsPrimitive.Indicator
       data-slot="tabs-indicator"
       className={cn(
-        "absolute bg-foreground transition-transform duration-[var(--duration-base)] ease-out-quart motion-reduce:transition-none",
+        // ease-in-out, not ease-out: the indicator travels between two resting
+        // points on screen, so it should accelerate away and decelerate in.
+        "absolute bg-foreground transition-transform duration-[var(--duration-base)] ease-in-out-cubic motion-reduce:transition-none",
         "group-data-horizontal/tabs:bottom-[-5px] group-data-horizontal/tabs:left-0 group-data-horizontal/tabs:h-0.5",
         "group-data-horizontal/tabs:w-[var(--active-tab-width)] group-data-horizontal/tabs:translate-x-[var(--active-tab-left)]",
         "group-data-vertical/tabs:-right-1 group-data-vertical/tabs:top-0 group-data-vertical/tabs:w-0.5",

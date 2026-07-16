@@ -13,6 +13,7 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
+    "migrate": "tsx scripts/migrate.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -28,6 +29,7 @@
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9",
+    "tsx": "^4.20.0",
     "typescript": "^5",
     "vitest": "^3"
   }

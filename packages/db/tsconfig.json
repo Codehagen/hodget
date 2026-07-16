@@ -6,6 +6,6 @@
       "@workspace/db/*": ["./src/*"]
     }
   },
-  "include": ["src", "vitest.config.ts"],
+  "include": ["src", "scripts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

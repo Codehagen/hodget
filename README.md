@@ -79,11 +79,16 @@ tables are managed in Supabase, and their TypeScript types are generated — nev
 hand-written.
 
 ```bash
-pnpm --filter web auth:generate   # create or refresh the auth schema
-pnpm --filter web db:types        # regenerate lib/supabase/types.ts
+pnpm --filter web auth:generate           # create or refresh the auth schema
+pnpm --filter @workspace/db migrate       # apply the engine tables (runs, decisions, …) to DATABASE_URL
+supabase db push                          # apply supabase/migrations (waitlist + RLS) to the Supabase project
+pnpm --filter web db:types                # regenerate lib/supabase/types.ts
 ```
 
-Run `db:types` after every schema change.
+The engine migrations are idempotent, so re-running `migrate` is always safe.
+`db:types` and `db push` need a linked Supabase project (`supabase login` +
+`supabase link`); generated types are committed, so you only need them after a
+schema change.
 
 ## Commands
 
