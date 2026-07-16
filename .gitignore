@@ -30,6 +30,10 @@ dist
 .claude/skills/*
 !.claude/skills/house-style/
 
+# provider spike output (plan 003): recorded real provider data is private-tier
+# and must NEVER be committed (licensing) — cassettes + generated findings note
+packages/engine/spike/output/
+
 # misc
 .DS_Store
 *.pem

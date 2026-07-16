@@ -16,6 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-fixtures": "node --experimental-strip-types fixtures/generate.ts",
+    "spike": "node --env-file-if-exists=.env --experimental-strip-types spike/run-spike.ts",
+    "spike:typecheck": "tsc -p spike/tsconfig.json",
     "demo": "vitest run -c vitest.demo.config.ts"
   },
   "dependencies": {
