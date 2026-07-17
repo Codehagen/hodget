@@ -3,8 +3,10 @@ import { Badge } from "@workspace/ui/components/badge"
 import { DashboardView } from "@/components/dashboard/dashboard-view"
 import { DEMO_DASHBOARD } from "@/components/dashboard/demo-data"
 
-// Sample data for now — live run data is wired in from the runs API next. The
-// requireSession guard stays in the layout, so this route is still auth-only.
+// The overview aggregates are still sample data; real runs live under
+// /dashboard/runs (see plans/README.md direction options for wiring the
+// overview). The requireSession guard stays in the layout, so this route is
+// still auth-only.
 export default function DashboardPage() {
   return (
     <DashboardView
@@ -13,7 +15,7 @@ export default function DashboardPage() {
       source="real"
       notice={
         <Badge variant="neutral" className="font-normal">
-          Sample data · live wiring coming
+          Sample overview · your real runs are under Runs
         </Badge>
       }
     />

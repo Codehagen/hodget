@@ -14,7 +14,9 @@ export default function DashboardRunsPage() {
   return (
     <>
       <div className="px-4 pt-4 md:px-6 md:pt-6">
-        <RealRunsSection />
+        <Suspense fallback={<Skeleton className="h-40" />}>
+          <RealRunsSection />
+        </Suspense>
       </div>
       <Suspense
         fallback={
