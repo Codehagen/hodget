@@ -20,13 +20,26 @@ import { getDb } from "./db"
  * boundary), and it imports no workflow APIs itself — the writable stream is passed
  * in, so `@workspace/db` and this helper stay runtime-agnostic and unit-testable.
  *
- * Auth model: the generated `/.well-known/workflow/v1/**` routes invoke these step
- * bodies WITHOUT an app-level session check — trust rests on platform gating of the
- * workflow endpoints. Ownership still holds regardless, because a runId only ever
- * enters a workflow via `createRun` (behind `requireSession`), and every read of a
- * run's data stays behind `getOwnedRun`; these steps only ever act on a runId that a
- * session-authorized caller already created. Deployment must verify that
- * `/.well-known/workflow/**` is not externally invocable.
+ * Auth model: the generated `/.well-known/workflow/v1/step` and `/flow` routes
+ * invoke these step bodies WITHOUT an app-level session check. This is verified,
+ * not assumed: on Vercel, the Workflow SDK build step (`@workflow/next`'s
+ * `writeFunctionsConfig`, confirmed by reading the installed `dist/builder-eager.js`)
+ * writes `.well-known/workflow/v1/config.json` with `experimentalTriggers` that
+ * register the step and workflow functions as Vercel Queue consumers only —
+ * per the `workflow@4.6.0` docs (`docs/deploying/world/vercel-world.mdx` "Security",
+ * `docs/how-it-works/framework-integrations.mdx` "Security"), this makes the
+ * functions unreachable through public HTTP entirely; only messages delivered
+ * through Vercel Queues can trigger execution, and handlers receive only a message
+ * ID, not a caller-supplied payload. This gate is default-on and requires no
+ * app code. (The generated `/.well-known/workflow/v1/webhook/[token]` route is
+ * different: `createWebhook()` is documented as intentionally public, gated only
+ * by its token — but this codebase does not call `createWebhook()`, so that route
+ * is unused surface, not part of this trust model.)
+ *
+ * Ownership still holds regardless of the above, because a runId only ever enters
+ * a workflow via `createRun` (behind `requireSession`), and every read of a run's
+ * data stays behind `getOwnedRun`; these steps only ever act on a runId that a
+ * session-authorized caller already created.
  */
 
 // Re-export so the directive file types its `getWritable<RunEvent>()` without
