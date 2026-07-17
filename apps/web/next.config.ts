@@ -24,8 +24,18 @@ const nextConfig: NextConfig = {
       ".js": [".ts", ".tsx", ".js", ".jsx"],
     },
   },
-  // Response hardening (plan 009). CSP ships report-only until it has proven
-  // clean against the real bundle in production; the rest are enforcing.
+  // Response hardening (plan 009). CSP ships report-only globally as a canary
+  // — it never blocks anything, it just lets browsers report what an
+  // enforcing policy would have blocked. Plan 021 layers an ENFORCING
+  // nonce+hash CSP on top of this for the dynamic, credential-handling
+  // surfaces (/dashboard/**, /sign-in, /sign-up) via apps/web/proxy.ts. The
+  // two headers apply independently and both are sent on those routes: the
+  // proxy's Content-Security-Policy actually blocks violations, while this
+  // report-only header keeps reporting alongside it as the canary for a
+  // future stricter policy (e.g. dropping style-src 'unsafe-inline').
+  // Static/public routes (/, /blog/**, /demo/**, /playbook, /waitlist) only
+  // ever get this report-only header — a nonce-based policy would force
+  // them dynamic, which this plan explicitly avoids.
   async headers() {
     return [
       {
