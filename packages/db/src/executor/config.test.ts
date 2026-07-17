@@ -92,3 +92,53 @@ describe("runConfigSchema — abuse caps (plan 009)", () => {
     ).toBe(false)
   })
 })
+
+describe("runConfigSchema — panel weight", () => {
+  it("accepts weight: 1", () => {
+    expect(runConfigSchema.safeParse(BASE).success).toBe(true)
+  })
+
+  it("accepts weight: 0 (a benched seat is valid today)", () => {
+    const result = runConfigSchema.safeParse({
+      ...BASE,
+      panel: { analysts: [{ id: "quant.earnings-drift", weight: 0 }] },
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it("rejects Infinity (the JSON.parse('1e999') attack shape)", () => {
+    const result = runConfigSchema.safeParse({
+      ...BASE,
+      panel: {
+        analysts: [
+          { id: "quant.earnings-drift", weight: Number.POSITIVE_INFINITY },
+        ],
+      },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects NaN", () => {
+    const result = runConfigSchema.safeParse({
+      ...BASE,
+      panel: { analysts: [{ id: "quant.earnings-drift", weight: NaN }] },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects a weight over the abuse cap (1001)", () => {
+    const result = runConfigSchema.safeParse({
+      ...BASE,
+      panel: { analysts: [{ id: "quant.earnings-drift", weight: 1001 }] },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects a negative weight (-1)", () => {
+    const result = runConfigSchema.safeParse({
+      ...BASE,
+      panel: { analysts: [{ id: "quant.earnings-drift", weight: -1 }] },
+    })
+    expect(result.success).toBe(false)
+  })
+})
