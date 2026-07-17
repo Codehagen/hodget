@@ -28,12 +28,12 @@ commit `67eb565` (2026-07-15 advisor audit); plans 016–021 against commit
 | 013 | [Playwright E2E smoke: public surfaces + auth redirect](./013-e2e-smoke.md) | Tests | M | LOW | DONE |
 | 014 | [CI Turbo cache, pre-commit hooks, env docs, real AGENTS.md](./014-ci-and-dx-loops.md) | DX | S | LOW | DONE |
 | 015 | [Resolve the three unowned frontend dependency decisions](./015-frontend-dependency-decisions.md) | Tech debt | S | LOW | DONE |
-| 016 | [SSE reconnects resume instead of replaying the run + durable-route tests](./016-sse-resume-on-reconnect.md) | Bug / Tests | M | LOW | DONE — reviewed & approved; branch `advisor/016-sse-resume-on-reconnect` (worktree), awaiting merge |
-| 017 | [Spike behind the typecheck gate; verdicts fail honest; env scaffold](./017-spike-hardening.md) | Bug / DX | S | LOW | DONE — reviewed & approved; branch `advisor/017-spike-hardening` (worktree), awaiting merge |
-| 018 | [Bound panel-seat weight (plan 009's missed field)](./018-bound-panel-seat-weight.md) | Bug / Security | S | LOW | DONE — reviewed & approved; branch `advisor/018-bound-panel-seat-weight` (worktree), awaiting merge |
-| 019 | [Workflow-endpoint gating: verify or enforce](./019-workflow-endpoint-gating.md) | Security | M | MED | DONE — outcome A (platform gate verified: WDK routes are Vercel Queue consumers, not public HTTP; e2e probe added); branch `advisor/019-workflow-endpoint-gating` (worktree), awaiting merge |
-| 020 | [Stream the runs page; truthful overview badge](./020-runs-page-streaming-and-badge.md) | Perf / Docs | S | LOW | DONE — reviewed & approved; branch `advisor/020-runs-page-streaming-and-badge` (worktree); visual check pending post-merge |
-| 021 | [Enforce nonce-based CSP on auth + dashboard surfaces](./021-enforce-csp.md) | Security | M | MED | DONE — reviewed & approved on 2nd run (1st correctly STOPPED on the next-themes inline script; plan refreshed to hash-cover it); branch `advisor/021-enforce-csp`, awaiting merge. Residual: authenticated /dashboard not e2e-exercised (needs seeded user); style-src unsafe-inline retained by design |
+| 016 | [SSE reconnects resume instead of replaying the run + durable-route tests](./016-sse-resume-on-reconnect.md) | Bug / Tests | M | LOW | DONE — reviewed & approved; merged to main 2026-07-17 (`290adcf`) |
+| 017 | [Spike behind the typecheck gate; verdicts fail honest; env scaffold](./017-spike-hardening.md) | Bug / DX | S | LOW | DONE — reviewed & approved; merged to main 2026-07-17 (`290adcf`) |
+| 018 | [Bound panel-seat weight (plan 009's missed field)](./018-bound-panel-seat-weight.md) | Bug / Security | S | LOW | DONE — reviewed & approved; merged to main 2026-07-17 (`290adcf`) |
+| 019 | [Workflow-endpoint gating: verify or enforce](./019-workflow-endpoint-gating.md) | Security | M | MED | DONE — outcome A (platform gate verified: WDK routes are Vercel Queue consumers, not public HTTP; e2e probe added); merged to main 2026-07-17 (`290adcf`) |
+| 020 | [Stream the runs page; truthful overview badge](./020-runs-page-streaming-and-badge.md) | Perf / Docs | S | LOW | DONE — reviewed & approved; merged to main 2026-07-17 (`290adcf`); visual check pending |
+| 021 | [Enforce nonce-based CSP on auth + dashboard surfaces](./021-enforce-csp.md) | Security | M | MED | DONE — reviewed & approved on 2nd run (1st correctly STOPPED on the next-themes inline script; plan refreshed to hash-cover it); merged to main 2026-07-17 (`290adcf`). Residual: authenticated /dashboard not e2e-exercised (needs seeded user); style-src unsafe-inline retained by design |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
