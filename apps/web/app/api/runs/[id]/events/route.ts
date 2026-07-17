@@ -12,10 +12,13 @@ import { getSession } from "@/lib/session"
  *
  * Durable path (the run has a `workflowRunId`): attach to the workflow run's
  * durable event stream via `getRun(id).getReadable({ startIndex })` and transform
- * each `RunEvent` to an SSE frame. `startIndex` (query param, default 0) lets a
- * late subscriber replay from the beginning — strictly better than the legacy
- * terminal-only replay, and it works across processes because the stream is
- * durable, not process-local. This retires the single-instance SSE limitation.
+ * each `RunEvent` to an SSE frame stamped with `id:` (plan 016). The resume
+ * point is the `Last-Event-ID` request header when present — native
+ * `EventSource` sends it automatically on reconnect, so a transient drop
+ * resumes the stream instead of replaying the run from index 0 — else the
+ * `startIndex` query param, else 0. Works across processes because the stream
+ * is durable, not process-local. This retires the single-instance SSE
+ * limitation.
  *
  * Inline / legacy path (no `workflowRunId`): the original in-process registry +
  * persisted-terminal replay, unchanged.
@@ -40,15 +43,25 @@ export async function GET(
   // Durable path: read the workflow run's durable stream.
   if (run.workflowRunId) {
     try {
+      // Resume point, in priority order: the browser's `Last-Event-ID` header
+      // (sent automatically on EventSource reconnect once frames carry `id:`,
+      // plan 016) resumes one past the last frame it saw; otherwise fall back
+      // to the `startIndex` query param (first connection, or a non-browser
+      // client); otherwise 0. Clamp both sources to a non-negative integer: a
+      // negative startIndex reaches WDK's getReadable where it means "last N",
+      // not "from N", and a non-numeric value parses to NaN. Either would
+      // silently change replay semantics, so floor to 0.
+      const clamp = (parsed: number) => (Number.isFinite(parsed) ? Math.max(0, parsed) : 0)
+      const lastEventId = request.headers.get("last-event-id")
       const startIndexParam = new URL(request.url).searchParams.get("startIndex")
-      const parsed = startIndexParam !== null ? Number.parseInt(startIndexParam, 10) : 0
-      // Clamp to a non-negative integer: a negative startIndex reaches WDK's
-      // getReadable where it means "last N", not "from N", and a non-numeric param
-      // parses to NaN. Either would silently change replay semantics, so floor to 0.
-      const startIndex = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
+      const startIndex =
+        lastEventId !== null
+          ? clamp(Number.parseInt(lastEventId, 10) + 1)
+          : clamp(startIndexParam !== null ? Number.parseInt(startIndexParam, 10) : 0)
       const source = getRun(run.workflowRunId).getReadable<RunEvent>({ startIndex })
       return new Response(
         sseFromRunEvents(source, {
+          startIndex,
           onEndWithoutTerminal: async () => {
             const latest = await getOwnedRun(id)
             return latest ? terminalEventForRun(latest) : null

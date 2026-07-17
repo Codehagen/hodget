@@ -36,12 +36,15 @@ async function drain(stream: ReadableStream<Uint8Array>): Promise<string> {
   return out
 }
 
-/** Parse SSE `data:` frames back into objects. */
+/** Parse SSE `id: <n>\ndata: <json>` frames back into objects. */
 function frames(text: string): RunEvent[] {
   return text
     .split("\n\n")
-    .filter((chunk) => chunk.startsWith("data: "))
-    .map((chunk) => JSON.parse(chunk.slice("data: ".length)) as RunEvent)
+    .filter((chunk) => chunk.includes("data: "))
+    .map((chunk) => {
+      const dataLine = chunk.split("\n").find((line) => line.startsWith("data: "))
+      return JSON.parse(dataLine!.slice("data: ".length)) as RunEvent
+    })
 }
 
 describe("sseFromRunEvents", () => {
@@ -55,7 +58,7 @@ describe("sseFromRunEvents", () => {
     const text = await drain(sseFromRunEvents(sourceOf(events)))
 
     // Exact frame format, byte-for-byte.
-    expect(text).toContain('data: {"type":"started","runId":"r1","at":"t0"}\n\n')
+    expect(text).toContain('id: 0\ndata: {"type":"started","runId":"r1","at":"t0"}\n\n')
     expect(frames(text)).toEqual(events)
   })
 
@@ -110,6 +113,46 @@ describe("sseFromRunEvents", () => {
     const parsed = frames(await drain(sseFromRunEvents(sourceOf(events), { onEndWithoutTerminal: onEnd })))
     expect(parsed.map((e) => e.type)).toEqual(["started", "completed"])
     expect(onEnd).not.toHaveBeenCalled()
+  })
+})
+
+describe("sseFromRunEvents — frame ids (plan 016)", () => {
+  it("stamps sequential ids starting at 0 by default", async () => {
+    const events: RunEvent[] = [
+      { type: "started", runId: "r1", at: "t0" },
+      { type: "progress", runId: "r1", asOf: "2026-01-02", day: 1 },
+    ]
+    const text = await drain(sseFromRunEvents(sourceOf(events)))
+    expect(text).toContain('id: 0\ndata: {"type":"started","runId":"r1","at":"t0"}\n\n')
+    expect(text).toContain(
+      'id: 1\ndata: {"type":"progress","runId":"r1","asOf":"2026-01-02","day":1}\n\n',
+    )
+  })
+
+  it("stamps ids starting at the given startIndex, aligned with getReadable's index space", async () => {
+    const events: RunEvent[] = [
+      { type: "progress", runId: "r1", asOf: "2026-01-05", day: 4 },
+      { type: "completed", runId: "r1", at: "t9" },
+    ]
+    const text = await drain(sseFromRunEvents(sourceOf(events), { startIndex: 3 }))
+    expect(text).toContain(
+      'id: 3\ndata: {"type":"progress","runId":"r1","asOf":"2026-01-05","day":4}\n\n',
+    )
+    expect(text).toContain('id: 4\ndata: {"type":"completed","runId":"r1","at":"t9"}\n\n')
+  })
+
+  it("carries the next sequential id on the end-without-terminal fallback frame", async () => {
+    const events: RunEvent[] = [{ type: "started", runId: "r1", at: "t0" }]
+    const text = await drain(
+      sseFromRunEvents(sourceOf(events), {
+        startIndex: 5,
+        onEndWithoutTerminal: () => ({ type: "completed", runId: "r1", at: "persisted" }),
+      }),
+    )
+    expect(text).toContain('id: 5\ndata: {"type":"started","runId":"r1","at":"t0"}\n\n')
+    expect(text).toContain(
+      'id: 6\ndata: {"type":"completed","runId":"r1","at":"persisted"}\n\n',
+    )
   })
 })
 

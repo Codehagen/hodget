@@ -31,15 +31,32 @@ export interface SseFromRunEventsOptions {
    * terminal frame instead of hanging open (mirrors the legacy `replayTerminal`).
    */
   readonly onEndWithoutTerminal?: () => Promise<RunEvent | null> | RunEvent | null
+  /**
+   * The durable-stream index of the first event `source` will yield (plan 016).
+   * Must match whatever `startIndex` the caller passed to WDK's
+   * `getRun(...).getReadable({ startIndex })` — the two are the same coordinate
+   * space, so every frame's `id:` line stays aligned with `getReadable`'s index
+   * semantics. Defaults to 0 (a stream read from the beginning).
+   */
+  readonly startIndex?: number
 }
 
 /**
  * Adapt a stream of {@link RunEvent}s (the workflow run's durable event stream)
- * into a Server-Sent Events byte stream (plan 004). Each event becomes a
- * `data: <json>\n\n` frame — byte-for-byte the same wire shape the in-process path
- * emits — and the stream closes as soon as a terminal event (completed/failed) is
- * seen or the source ends, whichever comes first. If the source ends without a
- * terminal event, `onEndWithoutTerminal` gets a chance to synthesize one.
+ * into a Server-Sent Events byte stream (plan 004). Each event becomes an
+ * `id: <index>\ndata: <json>\n\n` frame — byte-for-byte the same wire shape the
+ * in-process path emits, plus a stamped `id:` (plan 016) — and the stream closes
+ * as soon as a terminal event (completed/failed) is seen or the source ends,
+ * whichever comes first. If the source ends without a terminal event,
+ * `onEndWithoutTerminal` gets a chance to synthesize one.
+ *
+ * `id:` contract: the first frame carries `id: options.startIndex` (default 0),
+ * and each subsequent frame increments by one. The browser's native `EventSource`
+ * remembers the last `id:` it saw and resends it as the `Last-Event-ID` request
+ * header on reconnect — the route maps that header straight back onto
+ * `getReadable`'s `startIndex`, so a dropped connection resumes instead of
+ * replaying the run from the start. This id must therefore equal the durable
+ * stream's own index for that event, not just a locally-counted sequence number.
  *
  * Pure and runtime-agnostic (no workflow imports), so it unit-tests against a
  * stubbed `ReadableStream<RunEvent>`.
@@ -51,6 +68,12 @@ export function sseFromRunEvents(
   const encoder = new TextEncoder()
   const reader = source.getReader()
   let sawTerminal = false
+  let nextIndex = options.startIndex ?? 0
+
+  const frame = (value: RunEvent): Uint8Array => {
+    const id = nextIndex++
+    return encoder.encode(`id: ${id}\ndata: ${JSON.stringify(value)}\n\n`)
+  }
 
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
@@ -62,12 +85,12 @@ export function sseFromRunEvents(
           // persisted status so the client never hangs waiting for a terminal.
           if (!sawTerminal) {
             const fallback = await options.onEndWithoutTerminal?.()
-            if (fallback) controller.enqueue(encoder.encode(`data: ${JSON.stringify(fallback)}\n\n`))
+            if (fallback) controller.enqueue(frame(fallback))
           }
           controller.close()
           return
         }
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(value)}\n\n`))
+        controller.enqueue(frame(value))
         if (isTerminal(value)) {
           sawTerminal = true
           // The terminal frame is already delivered; if the upstream broke in
@@ -90,9 +113,7 @@ export function sseFromRunEvents(
           try {
             const fallback = await options.onEndWithoutTerminal?.()
             if (fallback) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(fallback)}\n\n`),
-              )
+              controller.enqueue(frame(fallback))
               controller.close()
               return
             }
