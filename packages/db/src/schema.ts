@@ -21,7 +21,7 @@ export type RunStatus = "queued" | "running" | "completed" | "failed"
  * authenticated user could store arbitrarily large payloads. */
 export const panelSeatSchema = z.object({
   id: z.string().min(1).max(100),
-  weight: z.number().min(0),
+  weight: z.number().min(0).finite().max(1000),
 })
 export type PanelSeat = z.infer<typeof panelSeatSchema>
 
