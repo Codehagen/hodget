@@ -12,7 +12,7 @@
   "scripts": {
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p spike/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-fixtures": "node --experimental-strip-types fixtures/generate.ts",

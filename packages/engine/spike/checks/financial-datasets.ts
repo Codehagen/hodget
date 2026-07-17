@@ -291,6 +291,13 @@ const fdDelisted: Check = {
         evidence,
       }
     }
+    if (prices.error) {
+      return {
+        status: "warn",
+        detail: `BBBY resolves (is_active=${String(isActive)}), but the 2022 price probe errored (${prices.error}) — delisted-coverage question is unanswered, not a genuine zero-coverage result.`,
+        evidence,
+      }
+    }
     const covered = prices.points.length > 0
     return {
       status: "pass",
