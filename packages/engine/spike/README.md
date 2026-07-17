@@ -17,6 +17,9 @@ This is a spike tool, **not engine code**: zero new dependencies (native
 pnpm --filter @workspace/engine spike
 ```
 
+Copy `cp .env.example .env` from `packages/engine/` and fill in the keys below
+to run the full suite locally.
+
 With no keys set it still runs the EODHD **demo tier** live (checks 8–11) and
 skips every keyed check. To run the full suite:
 

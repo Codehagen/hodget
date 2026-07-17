@@ -304,8 +304,16 @@ const eodhdOsloFilingDate: Check = {
       }
     }
 
-    if (anyFailure && worstFraction === 1) {
-      return { status: "fail", detail: "fundamentals request failed for at least one Oslo ticker", evidence: perTicker }
+    if (anyFailure) {
+      const failedTickers = tickers.filter((ticker) => {
+        const entry = perTicker[ticker]
+        return entry != null && typeof entry === "object" && "error" in entry
+      })
+      return {
+        status: "fail",
+        detail: `fundamentals request failed for ${failedTickers.join(", ")} — verdict withheld; rerun before trusting this check`,
+        evidence: perTicker,
+      }
     }
     const pass = worstFraction >= 0.9
     return {
