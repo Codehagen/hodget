@@ -1,0 +1,19 @@
+/*
+ * Landing-page entrance gate. The decision-map plays a one-time staggered
+ * entrance on mount (decision-flow.css). On the landing page the canvas starts
+ * below the fold, so CanvasReveal defers it: the canvas mounts with
+ * `data-entrance="off"` and the IntersectionObserver flips it to `"on"` on first
+ * view, which restarts the keyframe. Nulling only `animation-name` keeps the
+ * inline per-node `animation-delay`/`animation-fill-mode` longhands (layout.ts)
+ * harmless while suppressed. The higher specificity (added `[data-entrance]`
+ * attribute) wins over decision-flow.css's base rule. Mirrors the decisions-view
+ * entrance-gate precedent (decisions-view.css).
+ *
+ * Only matches when the canvas carries `data-entrance` — DecisionFlow renders that
+ * attribute solely when an `entrance` prop is passed, so /demo/decisions and the
+ * per-run pages (no prop) are untouched.
+ */
+.decision-map-canvas[data-entrance="off"] .react-flow__node,
+.decision-map-canvas[data-entrance="off"] .react-flow__edges {
+  animation-name: none;
+}

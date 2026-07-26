@@ -1,0 +1,73 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+coverage
+
+# next.js
+.next/
+out/
+
+# production
+build
+dist
+
+# turbo
+.turbo
+
+# local agent config (shared skills are allowlisted below)
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/house-style/
+
+# vendored third-party agent skills — not ours to redistribute
+.agents/
+skills-lock.json
+
+# internal working docs — kept locally, not published
+plans/
+animation-plans/
+design-concepts/
+
+# provider spike output: recorded real provider data is private-tier
+# and must NEVER be committed (licensing) — cassettes + generated findings note
+packages/engine/spike/output/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+.gstack/
+
+# playwright
+playwright-report/
+test-results/
+
+# local agent/MCP config (see .mcp.json.example)
+.mcp.json

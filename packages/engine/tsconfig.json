@@ -1,0 +1,11 @@
+{
+  "extends": "@workspace/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@workspace/engine/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "fixtures", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
