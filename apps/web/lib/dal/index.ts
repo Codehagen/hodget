@@ -37,6 +37,12 @@ export async function getSessionUserId() {
 // after requireSession(). Route handlers import from here, never from the package.
 export { createRun, listRuns, getRunDetail, getOwnedRun, type RunDetail } from "./runs"
 export { listPanelConfigs, createPanelConfig } from "./panel-configs"
+export {
+  getSeatEvidence,
+  type SeatAnalystView,
+  type SeatEvidenceView,
+  type SeatReasonView,
+} from "./analysts"
 export { runRegistry, startRun } from "./run-registry"
 
 // Validation schemas + event helpers re-exported so route handlers can validate

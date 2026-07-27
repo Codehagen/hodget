@@ -37,6 +37,9 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
+import type { SeatEvidenceView } from "@/lib/dal"
+
+import { SeatGatePanel } from "./analysts/seat-gate-panel"
 import {
   ANALYST_RECENT_SIGNALS,
   ANALYST_REGISTRY,
@@ -211,7 +214,19 @@ function StripCell({
 /* View                                                                */
 /* ------------------------------------------------------------------ */
 
-export function AnalystsView() {
+/**
+ * `seatEvidence` is the one prop this view takes, and it is optional on purpose
+ * (plan 024, design decision 3). Absent — which is the public /demo/analysts
+ * route — nothing changes, not one pixel; the six mock analysts below stay
+ * exactly as they are. Present, on the signed-in route, the seat-gate panel
+ * renders above them with the user's real measured evidence. The two surfaces
+ * diverge, and that is the point.
+ */
+export function AnalystsView({
+  seatEvidence,
+}: {
+  seatEvidence?: SeatEvidenceView
+} = {}) {
   const [query, setQuery] = React.useState("")
   const [sort, setSort] = React.useState<SortKey>("default")
   const [kind, setKind] = React.useState<KindFilter>("all")
@@ -266,6 +281,9 @@ export function AnalystsView() {
           </span>
         </div>
       </div>
+
+      {/* Seat gate — real measured evidence, signed-in route only. */}
+      {seatEvidence ? <SeatGatePanel evidence={seatEvidence} /> : null}
 
       {/* Summary strip */}
       <div

@@ -27,6 +27,10 @@ export default defineConfig({
     // run-workflow.test.ts executes a real backtest over pglite; on CI's
     // contended 2-core runners the 5s default flakes. Headroom, not an SLA.
     testTimeout: 30_000,
+    // Hooks have a separate budget from tests (10s default), and pglite starts
+    // up in beforeAll — so raising testTimeout alone left this suite exposed.
+    // See packages/db/vitest.config.ts for the full note.
+    hookTimeout: 30_000,
   },
   resolve: {
     alias: {
