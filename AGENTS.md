@@ -21,6 +21,9 @@ contract is "every export validates the session first".
   `knownAt > asOf`. `PitMarketData` enforces this centrally — do not bypass it.
 - LLMs form views; deterministic code executes trades. No model output ever
   sizes a position past the risk gate.
+- Attribution is the only code allowed to read data from after a decision
+  cutoff, and only through `OutcomeData` — never `MarketData`. Analysts are
+  never handed it; `src/attribution/boundary.test.ts` enforces this.
 - Fixtures are deterministic: no `Date.now()`, `new Date()` without an
   argument, or `Math.random()` in anything rendered or asserted. Seed from
   fixture strings.
