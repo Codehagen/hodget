@@ -26,6 +26,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@workflow/next": "4.1.0",
     "@workspace/db": "workspace:*",
+    "@workspace/engine": "workspace:*",
     "@workspace/ui": "workspace:*",
     "@xyflow/react": "^12.11.2",
     "ai": "^7.0.28",
